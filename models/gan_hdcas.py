@@ -150,7 +150,7 @@ def train_model(num_epochs=40):
     D.train()
     G.train()
     for epoch in range(num_epochs):
-        for batch_i, (real_keys, game_state) in enumerate(data_loader_keys):
+        for batch_i, (real_keys, game_state) in enumerate(data_loader_full):
             d_loss = train_d(real_keys)
             gan_model.d_losses.append(d_loss)
             g_loss = train_g()
@@ -160,4 +160,4 @@ def train_model(num_epochs=40):
             if batch_i % 400 == 0:
                 # print discriminator and generator loss
                 print('Epoch [{:d}/{:d}] | Batch [{:d}/{:d}] | d_loss: {:6.4f} | g_loss: {:6.4f}'.format(
-                    epoch + 1, num_epochs, batch_i, len(data_loader_keys), d_loss, g_loss))
+                    epoch + 1, num_epochs, batch_i, len(data_loader_full), d_loss, g_loss))

@@ -83,6 +83,9 @@ data_loader_space_key = DataLoader(space_key_dataset, batch_size=batch_size, shu
 data_loader_space_key_2 = DataLoader(space_key_dataset, batch_size=batch_size, shuffle=True)
 data_loader_space_key_only = DataLoader(space_key_only_dataset, batch_size=batch_size, shuffle=True)
 
+rffm_data_full = RFFMKeysDataset(DATA_NORM_FULL_FILENAME)
+data_loader_full = DataLoader(rffm_data_full, batch_size=batch_size, shuffle=True)
+
 rffm_data_filtered = RFFMKeysDataset(DATA_FILTERED_FILENAME)
 data_loader_keys = DataLoader(rffm_data_filtered, batch_size=batch_size, shuffle=True)
 
