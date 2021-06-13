@@ -1,8 +1,8 @@
 import math
 
-KEYS_MAX_VALUE = 40  # actual one is 37
+KEYS_MAX_VALUE = 10  # actual one is 37
 CLICK_LEAK_MAX_VALUE = 6
-KEYS_COLUMNS = range(31, 36)
+KEYS_COLUMNS = range(31, 35)  # don't normalize space key, which is already 0 or 1
 CLICK_LEAK_COLUMNS = range(40, 49)
 
 data_ranges = {
@@ -58,7 +58,7 @@ def normalize_csv_row(row):
     for i in data_ranges:
         row[i] = normalize(row[i], data_ranges[i])
     for i in KEYS_COLUMNS:
-        row[i] = normalize(row[i], [0, KEYS_MAX_VALUE])
+        row[i] = normalize(min(row[i], KEYS_MAX_VALUE), [0, KEYS_MAX_VALUE])
     for i in CLICK_LEAK_COLUMNS:
         row[i] = normalize(row[i], [0, CLICK_LEAK_MAX_VALUE])
     return row

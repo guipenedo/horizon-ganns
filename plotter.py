@@ -14,11 +14,12 @@ def plot_losses():
     plt.show()
 
 
-def plot_sample(gen_data, state, isNormalized=True):
+def plot_sample(gen_data, state, keys_normalized=True, state_normalized=True):
     gen_data = gen_data.float()
     state = state.detach().clone()
-    if isNormalized:
+    if state_normalized:
         undo_state_normalization(state)
+    if keys_normalized:
         undo_keys_normalization(gen_data)
 
     time = int(state[0])

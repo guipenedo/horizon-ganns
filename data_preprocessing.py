@@ -28,8 +28,8 @@ def get_columns_as_list(df_input, columns):
     return [df_input[column] for column in columns]
 
 
-def get_input_counts_as_list(input_row, name, values):
-    return [str(input_row[name]).count(value) for value in values]
+def get_input_counts_as_list(input_row, name, values, max=9999):
+    return [min(str(input_row[name]).count(value), max) for value in values]
 
 
 def get_diff_pos(input_row, input_prev_row):
@@ -73,17 +73,23 @@ for filename in os.listdir(raw_data_folder):
     with open(os.path.join(raw_data_folder, filename), "r") as data_file:
         df = pd.read_csv(data_file, dtype=object)
         df.rename(columns=lambda x: x.strip(), inplace=True)
+        file_data = []
+        file_data_norm = []
+        has_keys = False
         for index, row in df.iterrows():
             if index == 0:
                 prev_row = row
                 continue
-            concat_data.append([
+            keypresses = get_input_counts_as_list(row, "keys", keys, 10)
+            if keypresses.count(0) != len(keypresses):
+                has_keys = True
+            file_data.append([
                 *get_columns_as_list(row, concat_data_columns[:6]),
                 *get_diff_pos(row, prev_row),
                 *bitmask_to_one_hot(row["forest_state"], 9),
                 *get_columns_as_list(row, concat_data_columns[18:22]),
                 *bitmask_to_one_hot(row["leaks_state"], 9),
-                *get_input_counts_as_list(row, "keys", keys),
+                *keypresses,
                 *get_input_counts_as_list(row, "clicks", clicks),
                 *get_input_counts_as_list(row, "errors", errors),
                 row["shortcuts"],
@@ -91,21 +97,26 @@ for filename in os.listdir(raw_data_folder):
                 1 if float(row["water_ground_tank"]) > 40 else 0,
                 1 if float(row["robot_x"])**2 + (float(row["robot_y"]) + 10)**2 < 4 else 0
             ])
-            norm_data = normalize_csv_row(concat_data[-1])
-            concat_data_norm.append(norm_data)
-            if get_input_counts_as_list(row, "keys", keys).count(0) < len(keys):  # at least one non-zero value
+            norm_data = normalize_csv_row(file_data[-1])
+            file_data_norm.append(norm_data)
+            """if get_input_counts_as_list(row, "keys", keys).count(0) < len(keys):  # at least one non-zero value
                 concat_data_norm_filtered.append(norm_data)
             else:
-                concat_data_norm_filtered_no_key.append(norm_data)
+                concat_data_norm_filtered_no_key.append(norm_data)"""
             prev_row = row
         if file_counter % 10 == 0:
             print(file_counter, "files processed")
         file_counter += 1
+        if has_keys:
+            concat_data.extend(file_data)
+            concat_data_norm.extend(file_data_norm)
+
 df = pd.DataFrame(concat_data, columns=concat_data_columns)
 df.to_csv(output_data_filename, index=False)
 df_norm = pd.DataFrame(concat_data_norm, columns=concat_data_columns)
 df_norm.to_csv(output_data_filename_norm, index=False)
-df_norm_filtered = pd.DataFrame(concat_data_norm_filtered, columns=concat_data_columns)
+"""df_norm_filtered = pd.DataFrame(concat_data_norm_filtered, columns=concat_data_columns)
 df_norm_filtered.to_csv(output_data_filename_norm_filtered, index=False)
 df_norm_filtered_no_key = pd.DataFrame(concat_data_norm_filtered_no_key, columns=concat_data_columns)
 df_norm_filtered_no_key.to_csv(output_data_filename_norm_filtered_no_key, index=False)
+"""
