@@ -47,8 +47,7 @@ class Discriminator(nn.Module):
             *discriminator_block(d_dim, 2 * d_dim),
             *discriminator_block(2 * d_dim, 4 * d_dim),
             # output layer
-            nn.Linear(4 * d_dim, 1),
-            nn.Softmax()
+            nn.Linear(4 * d_dim, 1)
         )
 
     def forward(self, x):
@@ -83,8 +82,8 @@ class Generator(nn.Module):
             *generator_block(g_dim, 2 * g_dim),
             *generator_block(2 * g_dim, 4 * g_dim),
             # output layer
-            nn.Linear(4 * g_dim, keys_size * 11),  # includes 0
-            Reshape((keys_size, 11)),
+            nn.Linear(4 * g_dim, keys_size * (MAX_KEYPRESSES + 1)),  # includes 0
+            Reshape((keys_size, (MAX_KEYPRESSES + 1))),
             nn.Softmax(dim=1)
         )
 
@@ -112,21 +111,21 @@ G.apply(weights_init)
 d_optimizer = optim.Adam(D.parameters(), lr=lr_d)
 g_optimizer = optim.Adam(G.parameters(), lr=lr_g)
 
-gan_model = GANModel(D, G, "gan_hdcas_data.pt", torch.nn.BCELoss())
+gan_model = GANModel(D, G, "gan_hdcas_data.pt")
 
 
 def train_d(real_keys):
     d_optimizer.zero_grad()
-    D_output = D(real_keys)
+    D_output_real = D(real_keys)
     # loss on real keys
-    r_loss = gan_model.real_loss(D_output)
+    r_loss = torch.relu(torch.ones_like(D_output_real) - D_output_real).mean()
 
     with torch.no_grad():
         fake_keys = G.generate()
 
     # Compute the discriminator losses on fake keys
-    D_output = D(fake_keys)
-    f_loss = gan_model.fake_loss(D_output)
+    D_output_fake = D(fake_keys)
+    f_loss = torch.relu(torch.ones_like(D_output_fake) + D_output_fake).mean()
     # add up real and fake losses and perform backprop
     d_loss = r_loss + f_loss
     d_loss.backward()
@@ -140,7 +139,7 @@ def train_g():
     fake_keys = G.generate()
     D_fake = D(fake_keys)
 
-    g_loss = gan_model.real_loss(D_fake)
+    g_loss = torch.relu(torch.ones_like(D_fake) - D_fake).mean()
 
     g_loss.backward()
     g_optimizer.step()
