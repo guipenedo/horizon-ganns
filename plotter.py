@@ -17,6 +17,7 @@ def plot_losses():
 def plot_sample(gen_data, state, keys_normalized=True, state_normalized=True):
     gen_data = gen_data.float()
     state = state.detach().clone()
+    print(gen_data)
     if state_normalized:
         undo_state_normalization(state)
     if keys_normalized:
@@ -70,7 +71,7 @@ def plot_sample(gen_data, state, keys_normalized=True, state_normalized=True):
     # key_front, key_back, key_left, key_right, key_space
     gen_data = gen_data.int()
     plt.figtext(0.5, 0.9,
-                f"Front: {gen_data[0]} | Back: {gen_data[1]} | Left: {gen_data[2]} | Right: {gen_data[3]} | Space: {gen_data[4]}",
+                f"Front: {gen_data[0]} | Back: {gen_data[1]} | Left: {gen_data[2]} | Right: {gen_data[3]} | Space: 0",
                 ha="center", fontsize=12)
     plt.show()
 

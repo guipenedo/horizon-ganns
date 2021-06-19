@@ -57,8 +57,8 @@ def normalize_csv_row(row):
     row = row.copy()
     for i in data_ranges:
         row[i] = normalize(row[i], data_ranges[i])
-    for i in KEYS_COLUMNS:
-        row[i] = normalize(min(row[i], KEYS_MAX_VALUE), [0, KEYS_MAX_VALUE])
+    # for i in KEYS_COLUMNS:
+    #    row[i] = normalize(min(row[i], KEYS_MAX_VALUE), [0, KEYS_MAX_VALUE])
     for i in CLICK_LEAK_COLUMNS:
         row[i] = normalize(row[i], [0, CLICK_LEAK_MAX_VALUE])
     return row

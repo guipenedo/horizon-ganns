@@ -90,7 +90,7 @@ for filename in os.listdir(raw_data_folder):
                 *get_columns_as_list(row, concat_data_columns[18:22]),
                 *bitmask_to_one_hot(row["leaks_state"], 9),
                 *keypresses,
-                *get_input_counts_as_list(row, "clicks", clicks),
+                *get_input_counts_as_list(row, "clicks", clicks, 6),
                 *get_input_counts_as_list(row, "errors", errors),
                 row["shortcuts"],
                 1 if float(row["water_robot_tank"]) > 40 else 0,
