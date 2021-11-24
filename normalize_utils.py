@@ -6,22 +6,22 @@ KEYS_COLUMNS = range(31, 35)  # don't normalize space key, which is already 0 or
 CLICK_LEAK_COLUMNS = range(40, 49)
 
 data_ranges = {
-    0: [0, 600],  # remaining_time
-    2: [-1, 6],  # alarm
-    3: [-20, 20],  # robot_x
-    4: [-20, 20],  # robot_y
-    5: [-math.pi, math.pi],  # robot_theta
-    6: [-40, 40],  # robot_x_diff
-    7: [-40, 40],  # robot_y_diff
-    8: [-2 * math.pi, 2 * math.pi],  # robot_theta_diff
-    18: [0, 100],  # battery_level,
-    19: [20, 240],  # temperature
-    20: [0, 100],  # water_robot_tank
-    21: [0, 100],  # water_ground_tank
-    36: [0, 7],  # click_left
-    37: [0, 7],  # click_right
-    38: [0, 32],  # click_push
-    39: [0, 32]  # click_wrench
+    "remaining_time": [0, 600],  # remaining_time
+    "alarm": [-1, 6],  # alarm
+    "robot_x": [-20, 20],  # robot_x
+    "robot_y": [-20, 20],  # robot_y
+    "robot_theta": [-math.pi, math.pi],  # robot_theta
+    "robot_x_diff": [-40, 40],  # robot_x_diff
+    "robot_y_diff": [-40, 40],  # robot_y_diff
+    "robot_theta_diff": [-2 * math.pi, 2 * math.pi],  # robot_theta_diff
+    "battery_level": [0, 100],  # battery_level,
+    "temperature": [20, 240],  # temperature
+    "water_robot_tank": [0, 100],  # water_robot_tank
+    "water_ground_tank": [0, 100],  # water_ground_tank
+    "click_left": [0, 7],  # click_left
+    "click_right": [0, 7],  # click_right
+    "click_push": [0, 32],  # click_push
+    "click_wrench": [0, 32]  # click_wrench
 }
 
 
@@ -53,12 +53,14 @@ def undo_water_normalization(clicks):
         clicks[i] = undo_normalization(clicks[i], [0, CLICK_LEAK_MAX_VALUE])
 
 
-def normalize_csv_row(row):
+def normalize_csv_row(data_columns, row):
     row = row.copy()
-    for i in data_ranges:
-        row[i] = normalize(row[i], data_ranges[i])
+    for i in range(len(data_columns)):
+        column = data_columns[i]
+        if column in data_ranges:
+            row[i] = normalize(row[i], data_ranges[column])
     # for i in KEYS_COLUMNS:
     #    row[i] = normalize(min(row[i], KEYS_MAX_VALUE), [0, KEYS_MAX_VALUE])
-    for i in CLICK_LEAK_COLUMNS:
-        row[i] = normalize(row[i], [0, CLICK_LEAK_MAX_VALUE])
+    #for i in CLICK_LEAK_COLUMNS:
+    #    row[i] = normalize(row[i], [0, CLICK_LEAK_MAX_VALUE])
     return row

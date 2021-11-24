@@ -1,5 +1,8 @@
 import torch.nn as nn
 import torch.optim as optim
+
+import plotter
+from datasets import move_keys_full_state_dataset
 from models_util import *
 
 # Discriminator hyperparameters
@@ -23,6 +26,8 @@ n_critic = 5
 # state and data dimensions
 flat_labels_size = keys_size * (MAX_KEYPRESSES + 1)  # includes 0
 state_size = 1
+
+data_loader = DataLoader(move_keys_full_state_dataset, batch_size=batch_size, shuffle=True)
 
 
 class Discriminator(nn.Module):
@@ -154,7 +159,7 @@ def train_model(num_epochs=40):
     D.train()
     G.train()
     for epoch in range(num_epochs):
-        for batch_i, (real_keys, game_state) in enumerate(data_loader_full):
+        for batch_i, (real_keys, game_state) in enumerate(data_loader):
             d_loss = train_d(real_keys)
 
             if batch_i % n_critic == 0:
@@ -166,12 +171,12 @@ def train_model(num_epochs=40):
                 if batch_i % 400 == 0:
                     # print discriminator and generator loss
                     print('Epoch [{:d}/{:d}] | Batch [{:d}/{:d}] | d_loss: {:6.4f} | g_loss: {:6.4f}'.format(
-                        epoch + 1, num_epochs, batch_i, len(data_loader_full), d_loss, g_loss))
+                        epoch + 1, num_epochs, batch_i, len(data_loader), d_loss, g_loss))
 
 
 def sample_generator():
     G.eval()
-    x, y = next(iter(data_loader_full))
+    x, y = next(iter(data_loader))
     x = x.argmax(dim=2)
     x_fake = G.generate().argmax(dim=2)
     empty = torch.tensor([0]).float()

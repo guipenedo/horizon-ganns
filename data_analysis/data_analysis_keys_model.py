@@ -4,7 +4,7 @@ keys = ["front", "back", "left", "right", "space"]
 
 #df = pd.read_csv("key_counts.csv")
 
-from models.wgan_dp_no_cond_hdcas import *
+from models.cgan_dp_keys import *
 
 keys_counts = {k: 11 * [0] for k in keys}
 front_back_combo = [[0 for i in range(11)] for j in range(11)]

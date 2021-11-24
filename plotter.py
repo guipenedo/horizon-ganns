@@ -14,6 +14,65 @@ def plot_losses():
     plt.show()
 
 
+def plot_sample_keys(gen_data, state, state_normalized=True):
+    gen_data = gen_data.float()
+    state = state.detach().clone()
+    if state_normalized:
+        undo_state_normalization(state)
+
+    # time = int(state[0])
+    auto_mode = state[0] == 1.0
+    #battery = int(state[18])
+    #water = int(state[19])
+
+    robot_x = state[1]
+    robot_y = state[2]
+    robot_theta = state[3]
+    robot_x_diff = state[4]
+    robot_y_diff = state[5]
+    robot_x_prev = robot_x - robot_x_diff
+    robot_y_prev = robot_y - robot_y_diff
+
+    plt.figure()
+
+    # trees
+    treesX = [4.55076, -0.7353, -15.10146, -2.6019, -1.33158, 16.58292, 16.87086, 0.6078, -16.65378]
+    treesY = [14.66826, 14.75052, 15.76476, 6.7425, 10.02042, -12.5847, -16.01952, -16.23906, -16.23906]
+    plt.plot(treesX, treesY, 'g^', markersize=10)
+    # # fires
+    # for i in range(9):
+    #     if state[9 + i] == 1.0:
+    #         plt.plot(treesX[i], treesY[i], 'r^', markersize=5)
+
+    # water square
+    plt.plot(0, -10, 'bs')
+    # battery square
+    plt.plot(16, 16.29, 'rp')
+
+    # finally, the robot
+    plt.plot(robot_x, robot_y, marker=(3, 0, -90 + np.degrees(robot_theta)), color="black", markersize=15)
+    plt.plot([robot_x_prev, robot_x], [robot_y_prev, robot_y], 'k-')
+
+    plt.xlim([-20, 20])
+    plt.ylim([-20, 20])
+    plt.xlabel('x')
+    plt.ylabel('y')
+
+    # plt.figtext(0.2, 0.96, f"Time: {time}/600", ha="center", fontsize=12)
+    # plt.figtext(0.4, 0.96, f"Battery: {battery}%", ha="center", fontsize=12,
+    #             bbox={"facecolor": "orange", "alpha": 0.5, "pad": 3})
+    # plt.figtext(0.6, 0.96, f"Water: {water}%", ha="center", fontsize=12,
+    #             bbox={"facecolor": "blue", "alpha": 0.5, "pad": 3})
+    plt.figtext(0.75, 0.96, "Automatic" if auto_mode else "Manual", ha="left", fontsize=12,
+                bbox={"facecolor": "red" if auto_mode else "grey", "alpha": 0.5, "pad": 3})
+    # key_front, key_back, key_left, key_right, key_space
+    gen_data = [1 if x > 0.5 else 0 for x in gen_data]
+    plt.figtext(0.5, 0.9,
+                f"Front: {gen_data[0]} | Back: {gen_data[1]} | Left: {gen_data[2]} | Right: {gen_data[3]} | Space: {gen_data[4]}",
+                ha="center", fontsize=12)
+    plt.show()
+
+
 def plot_sample(gen_data, state, keys_normalized=True, state_normalized=True):
     gen_data = gen_data.float()
     state = state.detach().clone()
