@@ -1,10 +1,8 @@
 import pandas as pd
-import numpy as np
 from statsmodels.multivariate.manova import MANOVA
 
 keys = ["front", "back", "left", "right", "space"]
 K = len(keys)
-#df = pd.read_csv("key_counts.csv")
 
 from models.cgan_dp_keys_tanh import gan_model, G, data_loader
 
@@ -13,26 +11,37 @@ df = pd.DataFrame()
 gan_model.load_model()
 G.eval()
 
-row_count = 0
-for batch_i, (real_keys, game_state) in enumerate(data_loader):
-    counts = G.generate(game_state)
+
+def add_rows(keys_d, state, df, generator=1):
     ri = 0
-    for row in counts:
-        dict = {'robot_mode': game_state[ri][0].item()}
+    for row in keys_d:
+        dict = {'generator': generator, 'robot_mode': state[ri][0].item()}
         for i in range(K):
-            y = row[i].item() #1 if row[i].item() > 0 else 0
+            y = row[i].item()  # 1 if row[i].item() > 0 else 0
             dict[keys[i]] = y
         df = df.append(dict, ignore_index=True)
         ri += 1
-        # print(dict)
+    return df
+
+
+row_count = 0
+for batch_i, (real_keys, game_state) in enumerate(data_loader):
+    counts = G.generate(game_state)
+
+    df = add_rows(counts, game_state, df, generator=1)
+
+    df = add_rows(real_keys, game_state, df, generator=0)
+
     if batch_i % 10 == 0:
         print(batch_i)
-    # if batch_i == 100:
-    #     break
+#     if batch_i == 3:
+#         break
+#
+# print(df)
 
 print("Computing")
 
-maov = MANOVA.from_formula('front + back + left + right + space ~ robot_mode', data=df)
+maov = MANOVA.from_formula('front + back + left + right + space ~ generator', data=df)
 print(maov.mv_test())
 
 
@@ -82,6 +91,32 @@ for original values
              Pillai's trace 0.0832 5.0000 274414.0000 4980.3789 0.0000
      Hotelling-Lawley trace 0.0907 5.0000 274414.0000 4980.3789 0.0000
         Roy's greatest root 0.0907 5.0000 274414.0000 4980.3789 0.0000
+======================================================================
+
+"""
+
+
+"""
+generator mode comparison
+                      Multivariate linear model
+======================================================================
+                                                                      
+----------------------------------------------------------------------
+       Intercept         Value  Num DF    Den DF     F Value    Pr > F
+----------------------------------------------------------------------
+          Wilks' lambda  0.0433 5.0000 548834.0000 2426422.8863 0.0000
+         Pillai's trace  0.9567 5.0000 548834.0000 2426422.8863 0.0000
+ Hotelling-Lawley trace 22.1053 5.0000 548834.0000 2426422.8863 0.0000
+    Roy's greatest root 22.1053 5.0000 548834.0000 2426422.8863 0.0000
+----------------------------------------------------------------------
+                                                                      
+----------------------------------------------------------------------
+           generator        Value  Num DF    Den DF    F Value  Pr > F
+----------------------------------------------------------------------
+              Wilks' lambda 0.9336 5.0000 548834.0000 7809.7982 0.0000
+             Pillai's trace 0.0664 5.0000 548834.0000 7809.7982 0.0000
+     Hotelling-Lawley trace 0.0711 5.0000 548834.0000 7809.7982 0.0000
+        Roy's greatest root 0.0711 5.0000 548834.0000 7809.7982 0.0000
 ======================================================================
 
 """
