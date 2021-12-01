@@ -1,0 +1,21 @@
+                         front      back      left     right     space
+generator robot_mode
+0         0.0         0.236450  0.035508  0.149748  0.111013  0.020331
+          1.0         0.064721  0.009168  0.038145  0.029919  0.006892
+1         0.0         0.243784  0.024647  0.115164  0.093298  0.005556
+          1.0         0.093039  0.004825  0.036404  0.032135  0.001682
+Key: front
+Comparing frequencies of manual dataset [0.23645045 0.76354955] vs manual generated [0.24378441 0.75621559]: p_value=0.9862289009957438; same
+Comparing frequencies of automatic dataset [0.06472149 0.93527851] vs automatic generated [0.09303946 0.90696054]: p_value=0.9083675346999505; same
+Key: back
+Comparing frequencies of manual dataset [0.03550843 0.96449157] vs manual generated [0.02464728 0.97535272]: p_value=0.9531993777465646; same
+Comparing frequencies of automatic dataset [0.00916758 0.99083242] vs automatic generated [0.00482465 0.99517535]: p_value=0.9636549750702056; same
+Key: left
+Comparing frequencies of manual dataset [0.14974765 0.85025235] vs manual generated [0.11516403 0.88483597]: p_value=0.9227893729707846; same
+Comparing frequencies of automatic dataset [0.03814514 0.96185486] vs automatic generated [0.03640352 0.96359648]: p_value=0.9927454144758352; same
+Key: right
+Comparing frequencies of manual dataset [0.11101313 0.88898687] vs manual generated [0.09329835 0.90670165]: p_value=0.9550312317428984; same
+Comparing frequencies of automatic dataset [0.02991877 0.97008123] vs automatic generated [0.0321347 0.9678653]: p_value=0.9896221330012931; same
+Key: space
+Comparing frequencies of manual dataset [0.0203315 0.9796685] vs manual generated [0.00555603 0.99444397]: p_value=0.9166195624683846; same
+Comparing frequencies of automatic dataset [0.00689236 0.99310764] vs automatic generated [0.00168233 0.99831767]: p_value=0.9497875626029859; same
