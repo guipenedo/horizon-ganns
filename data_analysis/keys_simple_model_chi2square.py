@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 
 df = pd.read_csv("full_results.csv")
@@ -22,7 +22,8 @@ def compute_chi_square_gof(expected, observed):
     - observed: numpy array of observed values.
     Returns: p-value
     """
-    result = stats.chisquare(f_obs=observed, f_exp=expected)
+    expected_scaled = expected / float(sum(expected)) * sum(observed)
+    result = stats.chisquare(f_obs=observed, f_exp=expected_scaled)
     return result[1]
 
 
@@ -35,34 +36,25 @@ def make_decision(p_value):
     return "different" if p_value < 0.05 else "same"
 
 
-def get_keys_distribution(generated, robot_mode, freq=True):
+def get_keys_distribution(key, generated, robot_mode):
     """
     Returns a size 5 np array with either the frequencies for all 5 keys or the number
     of successes for the specified generator/sample mode and robot_mode
     """
-    x = freqs if freq else suc
-    return np.array([x[key][generated][robot_mode] for key in keys])
+    return np.array([freqs[key][generated][robot_mode], 1 - freqs[key][generated][
+        robot_mode]])
 
 
 if __name__ == "__main__":
-    dataset_manual = get_keys_distribution(0, 0)
-    dataset_automatic = get_keys_distribution(0, 1)
-    generated_manual = get_keys_distribution(1, 0)
-    generated_automatic = get_keys_distribution(1, 1)
+    for key in keys:
+        print("Key: " + key)
+        dataset_manual = get_keys_distribution(key, 0, 0)
+        dataset_automatic = get_keys_distribution(key, 0, 1)
+        generated_manual = get_keys_distribution(key, 1, 0)
+        generated_automatic = get_keys_distribution(key, 1, 1)
 
-    p_value = compute_chi_square_gof(dataset_manual, generated_manual)
-    print(f"Comparing frequencies of manual dataset vs manual generated: {p_value=}; {make_decision(p_value)}")
+        p_value = compute_chi_square_gof(dataset_manual, generated_manual)
+        print(f"Comparing frequencies of manual dataset {dataset_manual} vs manual generated {generated_manual}: {p_value=}; {make_decision(p_value)}")
 
-    p_value = compute_chi_square_gof(dataset_automatic, generated_automatic)
-    print(f"Comparing frequencies of automatic dataset vs automatic generated: {p_value=}; {make_decision(p_value)}")
-
-    dataset_manual = get_keys_distribution(0, 0, False)
-    dataset_automatic = get_keys_distribution(0, 1, False)
-    generated_manual = get_keys_distribution(1, 0, False)
-    generated_automatic = get_keys_distribution(1, 1, False)
-
-    p_value = compute_chi_square_gof(dataset_manual, generated_manual)
-    print(f"Comparing counts of manual dataset vs manual generated: {p_value=}; {make_decision(p_value)}")
-
-    p_value = compute_chi_square_gof(dataset_automatic, generated_automatic)
-    print(f"Comparing counts of automatic dataset vs automatic generated: {p_value=}; {make_decision(p_value)}")
+        p_value = compute_chi_square_gof(dataset_automatic, generated_automatic)
+        print(f"Comparing frequencies of automatic dataset {dataset_automatic} vs automatic generated {generated_automatic}: {p_value=}; {make_decision(p_value)}")
