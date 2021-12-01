@@ -17,7 +17,7 @@ def add_rows(keys_d, state, df, generator=1):
     for row in keys_d:
         dict = {'generator': generator, 'robot_mode': state[ri][0].item()}
         for i in range(K):
-            y = row[i].item()  # 1 if row[i].item() > 0 else 0
+            y = 1 if row[i].item() > 0 else 0
             dict[keys[i]] = y
         df = df.append(dict, ignore_index=True)
         ri += 1

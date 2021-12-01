@@ -35,6 +35,7 @@ for batch_i, (real_keys, game_state) in enumerate(data_loader):
 pct_diffs = np.abs(key_counts - key_counts_dataset) * 100 / row_count
 print(f"Max: {np.amax(pct_diffs)}; Mean: {np.mean(pct_diffs)}")
 
+
 """
 cgan_dp_keys:
 10 training epochs: Max: 9.328401719991254; Mean: 0.5887644850958385
