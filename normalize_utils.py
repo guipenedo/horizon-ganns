@@ -1,4 +1,5 @@
 import math
+import sys
 
 KEYS_MAX_VALUE = 10  # actual one is 37
 CLICK_LEAK_MAX_VALUE = 6
@@ -18,10 +19,10 @@ data_ranges = {
     "temperature": [20, 240],  # temperature
     "water_robot_tank": [0, 100],  # water_robot_tank
     "water_ground_tank": [0, 100],  # water_ground_tank
-    "click_left": [0, 7],  # click_left
-    "click_right": [0, 7],  # click_right
-    "click_push": [0, 32],  # click_push
-    "click_wrench": [0, 32]  # click_wrench
+    # "click_left": [0, 7],  # click_left
+    # "click_right": [0, 7],  # click_right
+    # "click_push": [0, 32],  # click_push
+    # "click_wrench": [0, 32]  # click_wrench
 }
 
 
@@ -53,12 +54,14 @@ def undo_water_normalization(clicks):
         clicks[i] = undo_normalization(clicks[i], [0, CLICK_LEAK_MAX_VALUE])
 
 
-def normalize_csv_row(data_columns, row):
-    row = row.copy()
+def normalize_csv_row(data_columns, row1):
+    row = row1.copy()
     for i in range(len(data_columns)):
         column = data_columns[i]
         if column in data_ranges:
             row[i] = normalize(row[i], data_ranges[column])
+            # print(f"Normalizing {column}. {row1[i]}->{row[i]} range {data_ranges[column]}")
+    #sys.exit(0)
     # for i in KEYS_COLUMNS:
     #    row[i] = normalize(min(row[i], KEYS_MAX_VALUE), [0, KEYS_MAX_VALUE])
     #for i in CLICK_LEAK_COLUMNS:

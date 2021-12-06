@@ -1,10 +1,10 @@
 import os
 
+import pandas as pd
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
-from .dataset_utils import DEVICE
-import pandas as pd
-import torch
+
+from .dataset_utils import get_df_column_names
 
 
 class KeysPositionSequencesDataset(Dataset):
@@ -15,12 +15,10 @@ class KeysPositionSequencesDataset(Dataset):
 
     def __getitem__(self, idx):
         df = pd.read_csv(self.root + os.path.sep + self.data_files[idx])
-        data = df.to_numpy()
         # generated data: key_front, key_back, key_left, key_right, key_space
-        x = torch.from_numpy(data[:, 31:36]).float().to(DEVICE)
-        # robot_mode, robot_x, robot_y, robot_theta, robot_x_diff, robot_y_diff, robot_theta_diff
-        y_columns = [1, 3, 4, 5, 6, 7, 8]
-        y = torch.from_numpy(data[:, y_columns]).float().to(DEVICE)
+        x = get_df_column_names(df, ["key_front", "key_back", "key_left", "key_right", "key_space"])
+        # robot_mode, robot_x, robot_y, robot_theta
+        y = get_df_column_names(df, ["robot_mode", "robot_x", "robot_y", "robot_theta"])
         if self.smooth_labels:
             x = 0.9 * x
         return x, y
@@ -30,6 +28,8 @@ class KeysPositionSequencesDataset(Dataset):
 
 
 dataset = KeysPositionSequencesDataset("processed_data/normalized_sequences", smooth_labels=True)
+dataset10s = KeysPositionSequencesDataset("processed_data/normalized_sequences_10s", smooth_labels=True)
+dataset30s = KeysPositionSequencesDataset("processed_data/normalized_sequences_30s", smooth_labels=True)
 
 
 def pad_collate(batch):
