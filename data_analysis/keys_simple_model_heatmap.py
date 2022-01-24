@@ -32,6 +32,7 @@ for i in range(1000):
         game_state[:, 1] = 0.1 * x - 1 + 0.05
         for y in range(20):
             game_state[:, 2] = 0.1 * y - 1 + 0.05
+
             res = G.generate(game_state)
             for row in res:
                 if row[0].item() > 0:  # 1 front
@@ -40,4 +41,5 @@ for i in range(1000):
 board_counts = board_counts / board_counts.max()
 
 ax = sns.heatmap(board_counts)
+plt.title("Generated keys")
 plt.show()

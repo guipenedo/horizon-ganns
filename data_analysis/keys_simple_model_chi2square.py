@@ -9,7 +9,7 @@ keys = ["front", "back", "left", "right", "space"]
 suc = df.groupby(["generator", "robot_mode"]).sum()
 counts = df.groupby(["generator", "robot_mode"]).count()
 
-freqs = df.groupby(["generator", "robot_mode"]).mean()
+freqs = df.groupby(["generator", "robot_mode"]).mean() * 100
 
 print(freqs)
 
