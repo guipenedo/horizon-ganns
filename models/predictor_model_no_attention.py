@@ -8,18 +8,6 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-"""
---------------------------------
-K-FOLD CROSS VALIDATION RESULTS FOR 5 FOLDS
---------------------------------
-Fold 0: 4.7884565643129 %
-Fold 1: 4.748549680375421 %
-Fold 2: 4.6425008313934155 %
-Fold 3: 4.77145918782101 %
-Fold 4: 4.679082141669437 %
-Average: 4.726009681114437 %
-"""
-
 from datasets import SplitSequencesDataset
 from models_util import DEVICE, MODEL_DATA_DIR
 from itertools import chain
@@ -39,8 +27,7 @@ beta1 = 0.9
 beta2 = 0.999
 
 # Data config
-game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta",
-                      "tree_1", "tree_2", "tree_3", "tree_4", "tree_5", "tree_6", "tree_7", "tree_8", "tree_9"]
+game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta"]
 player_output_columns = ["key_front", "key_back", "key_left", "key_right", "key_space"]
 game_state_dim = len(game_state_columns)
 player_output_dim = len(player_output_columns)
@@ -74,9 +61,7 @@ class Predictor(nn.Module):
         super(Predictor, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
-        # Q is prev state, K,V are the entire encoded sequence
-        self.attn = nn.MultiheadAttention(embed_dim=encoding_size, kdim=encoding_size, vdim=encoding_size,
-                                          num_heads=1, dropout=0.3, batch_first=True)
+
         self.fc_layers = nn.Sequential(
             nn.Linear(encoding_size, hidden_size),
             nn.LeakyReLU(0.2, inplace=True),
@@ -89,11 +74,9 @@ class Predictor(nn.Module):
         )
 
     def forward(self, encoded):
-        last_encoded_state = encoded[:, -1:, :]
-        # attention
-        out, _ = self.attn(last_encoded_state, encoded, encoded)  # N x 1 x encoding_size
+        last_encoded_state = encoded[:, -1:, :]  # N x 1 x encoding_size
         # FC, final size = output_size
-        out = self.fc_layers(out)  # N x 1 x output_size
+        out = self.fc_layers(last_encoded_state)  # N x 1 x output_size
         return out
 
 #
