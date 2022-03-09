@@ -1,3 +1,4 @@
+import os
 from os.path import sep
 
 import numpy as np
@@ -7,18 +8,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
-"""
---------------------------------
-K-FOLD CROSS VALIDATION RESULTS FOR 5 FOLDS
---------------------------------
-Fold 0: 4.7884565643129 %
-Fold 1: 4.748549680375421 %
-Fold 2: 4.6425008313934155 %
-Fold 3: 4.77145918782101 %
-Fold 4: 4.679082141669437 %
-Average: 4.726009681114437 %
-"""
 
 from datasets import SplitSequencesDataset
 from models_util import DEVICE, MODEL_DATA_DIR
@@ -39,17 +28,18 @@ beta1 = 0.9
 beta2 = 0.999
 
 # Data config
-game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta",
-                      "tree_1", "tree_2", "tree_3", "tree_4", "tree_5", "tree_6", "tree_7", "tree_8", "tree_9"]
+game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta"]
 player_output_columns = ["key_front", "key_back", "key_left", "key_right", "key_space"]
 game_state_dim = len(game_state_columns)
 player_output_dim = len(player_output_columns)
 batch_size = 32
 
-dataset = SplitSequencesDataset("processed_data/observations_5s",
+dataset_path = os.getenv("OBSERVATIONS_DIR", "processed_data/observations_5s")
+
+dataset = SplitSequencesDataset(dataset_path,
                                 x_columns=player_output_columns,
                                 y_columns=game_state_columns,
-                                smooth_labels=True)
+                                smooth_labels=False)
 
 
 class Encoder(nn.Module):
@@ -169,7 +159,7 @@ class Predictor(nn.Module):
 #     return d_losses, g_losses
 
 
-MODEL_SAVE_FILENAME = "predictor_model"
+MODEL_SAVE_FILENAME = "predictor_model_att"
 SAVEDIR = MODEL_DATA_DIR + sep
 SAVEFILE_PATH = SAVEDIR + MODEL_SAVE_FILENAME + ".pt"
 
@@ -220,6 +210,7 @@ if __name__ == '__main__':
     # Define the K-fold Cross Validator
     kfold = KFold(n_splits=k_folds, shuffle=True)
 
+    pbar = tqdm(total=num_epochs * k_folds * (len(dataset) // k_folds + 1))
     for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
         # Print
         print(f'FOLD {fold}')
@@ -292,6 +283,7 @@ if __name__ == '__main__':
                     print('Loss after mini-batch %5d: %.3f' %
                           (batch_i + 1, current_loss / 500))
                     current_loss = 0.0
+                pbar.update()
 
         # Process is complete.
         print('Training process has finished. Saving trained model.')
@@ -300,7 +292,7 @@ if __name__ == '__main__':
         print('Starting testing')
 
         # Saving the model
-        save_path = f'{SAVEDIR}predictor_model-{fold}.pth'
+        save_path = f'{SAVEDIR}{MODEL_SAVE_FILENAME}-{fold}.pth'
         save_model(save_path)
 
         # Evaluation for this fold
@@ -343,3 +335,4 @@ if __name__ == '__main__':
             print(f'Fold {key}: {value} %')
             sum += value
         print(f'Average: {sum/len(results.items())} %')
+    pbar.close()

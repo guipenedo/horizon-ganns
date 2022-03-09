@@ -1,3 +1,4 @@
+import os
 from os.path import sep
 
 import numpy as np
@@ -33,10 +34,11 @@ game_state_dim = len(game_state_columns)
 player_output_dim = len(player_output_columns)
 batch_size = 32
 
-dataset = SplitSequencesDataset("processed_data/observations_5s",
+dataset_path = os.getenv("OBSERVATIONS_DIR", "processed_data/observations_5s")
+dataset = SplitSequencesDataset(dataset_path,
                                 x_columns=player_output_columns,
                                 y_columns=game_state_columns,
-                                smooth_labels=True)
+                                smooth_labels=False)
 
 
 class Encoder(nn.Module):
@@ -203,6 +205,7 @@ if __name__ == '__main__':
     # Define the K-fold Cross Validator
     kfold = KFold(n_splits=k_folds, shuffle=True)
 
+    pbar = tqdm(total=num_epochs * k_folds * (len(dataset) // k_folds + 1))
     for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
         # Print
         print(f'FOLD {fold}')
@@ -275,6 +278,7 @@ if __name__ == '__main__':
                     print('Loss after mini-batch %5d: %.3f' %
                           (batch_i + 1, current_loss / 500))
                     current_loss = 0.0
+                pbar.update()
 
         # Process is complete.
         print('Training process has finished. Saving trained model.')
@@ -283,7 +287,7 @@ if __name__ == '__main__':
         print('Starting testing')
 
         # Saving the model
-        save_path = f'{SAVEDIR}predictor_model-{fold}.pth'
+        save_path = f'{SAVEDIR}{MODEL_SAVE_FILENAME}-{fold}.pth'
         save_model(save_path)
 
         # Evaluation for this fold
@@ -326,3 +330,4 @@ if __name__ == '__main__':
             print(f'Fold {key}: {value} %')
             sum += value
         print(f'Average: {sum/len(results.items())} %')
+    pbar.close()
