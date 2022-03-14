@@ -35,7 +35,6 @@ player_output_dim = len(player_output_columns)
 batch_size = 32
 
 dataset_path = os.getenv("OBSERVATIONS_DIR", "processed_data/observations_5s")
-
 dataset = SplitSequencesDataset(dataset_path,
                                 x_columns=player_output_columns,
                                 y_columns=game_state_columns,
@@ -45,18 +44,16 @@ dataset = SplitSequencesDataset(dataset_path,
 class Encoder(nn.Module):
     def __init__(self, input_size, encoding_size, n_layers=2):
         super(Encoder, self).__init__()
-        # dropout
-        self.dropout = nn.Dropout(0.3)
         # Linear embedding obsv_size x h
-        self.embed = nn.Linear(input_size, encoding_size)
+        self.embed = nn.Sequential(nn.Dropout(0.3),
+                                   nn.Linear(input_size, encoding_size),
+                                   nn.LeakyReLU(0.2, inplace=True))
         # The LSTM cell.
         # Input dimension (observations mapped through embedding) is the same as the output
         self.lstm = nn.LSTM(encoding_size, encoding_size, num_layers=n_layers, batch_first=True)
 
     def forward(self, obsv):
-        # dropout
-        obsv = self.dropout(obsv)
-        # Linear embedding
+        # embedding
         obsv = self.embed(obsv)
         # Reshape and applies LSTM over a whole sequence or over one single step
         y, _ = self.lstm(obsv)
@@ -68,9 +65,7 @@ class Predictor(nn.Module):
         super(Predictor, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
-        # Q is prev state, K,V are the entire encoded sequence
-        self.attn = nn.MultiheadAttention(embed_dim=encoding_size, kdim=encoding_size, vdim=encoding_size,
-                                          num_heads=1, dropout=0.3, batch_first=True)
+
         self.fc_layers = nn.Sequential(
             nn.Dropout(0.3),
             nn.Linear(encoding_size, hidden_size),
@@ -87,11 +82,9 @@ class Predictor(nn.Module):
         )
 
     def forward(self, encoded):
-        last_encoded_state = encoded[:, -1:, :]
-        # attention
-        out, _ = self.attn(last_encoded_state, encoded, encoded)  # N x 1 x encoding_size
+        last_encoded_state = encoded[:, -1:, :]  # N x 1 x encoding_size
         # FC, final size = output_size
-        out = self.fc_layers(out)  # N x 1 x output_size
+        out = self.fc_layers(last_encoded_state)  # N x 1 x output_size
         return out
 
 #
@@ -167,7 +160,7 @@ class Predictor(nn.Module):
 #     return d_losses, g_losses
 
 
-MODEL_SAVE_FILENAME = "predictor_model_att"
+MODEL_SAVE_FILENAME = "predictor_model"
 SAVEDIR = MODEL_DATA_DIR + sep
 SAVEFILE_PATH = SAVEDIR + MODEL_SAVE_FILENAME + ".pt"
 
@@ -235,7 +228,7 @@ if __name__ == '__main__':
         testloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, sampler=test_subsampler)
 
         # Observations encoder
-        OE = Encoder(game_state_dim + player_output_dim, obs_encoding_size).to(DEVICE)
+        OE = Encoder(game_state_dim + player_output_dim, obs_encoding_size, n_layers=4).to(DEVICE)
 
         # Predictor
         P = Predictor(obs_encoding_size, g_hidden_size, player_output_dim).to(DEVICE)
@@ -249,8 +242,6 @@ if __name__ == '__main__':
         # loss
         mseloss = nn.MSELoss().to(DEVICE)
 
-        OE.train()
-        P.train()
         # Run the training loop for defined number of epochs
         for epoch in range(num_epochs):
 

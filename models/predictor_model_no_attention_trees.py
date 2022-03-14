@@ -28,14 +28,14 @@ beta1 = 0.9
 beta2 = 0.999
 
 # Data config
-game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta"]
+game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta",
+                      "tree_1", "tree_2", "tree_3", "tree_4", "tree_5", "tree_6", "tree_7", "tree_8", "tree_9"]
 player_output_columns = ["key_front", "key_back", "key_left", "key_right", "key_space"]
 game_state_dim = len(game_state_columns)
 player_output_dim = len(player_output_columns)
 batch_size = 32
 
 dataset_path = os.getenv("OBSERVATIONS_DIR", "processed_data/observations_5s")
-
 dataset = SplitSequencesDataset(dataset_path,
                                 x_columns=player_output_columns,
                                 y_columns=game_state_columns,
@@ -68,9 +68,7 @@ class Predictor(nn.Module):
         super(Predictor, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
-        # Q is prev state, K,V are the entire encoded sequence
-        self.attn = nn.MultiheadAttention(embed_dim=encoding_size, kdim=encoding_size, vdim=encoding_size,
-                                          num_heads=1, dropout=0.3, batch_first=True)
+
         self.fc_layers = nn.Sequential(
             nn.Dropout(0.3),
             nn.Linear(encoding_size, hidden_size),
@@ -87,11 +85,9 @@ class Predictor(nn.Module):
         )
 
     def forward(self, encoded):
-        last_encoded_state = encoded[:, -1:, :]
-        # attention
-        out, _ = self.attn(last_encoded_state, encoded, encoded)  # N x 1 x encoding_size
+        last_encoded_state = encoded[:, -1:, :]  # N x 1 x encoding_size
         # FC, final size = output_size
-        out = self.fc_layers(out)  # N x 1 x output_size
+        out = self.fc_layers(last_encoded_state)  # N x 1 x output_size
         return out
 
 #
@@ -167,7 +163,7 @@ class Predictor(nn.Module):
 #     return d_losses, g_losses
 
 
-MODEL_SAVE_FILENAME = "predictor_model_att"
+MODEL_SAVE_FILENAME = "predictor_model"
 SAVEDIR = MODEL_DATA_DIR + sep
 SAVEFILE_PATH = SAVEDIR + MODEL_SAVE_FILENAME + ".pt"
 
@@ -249,8 +245,6 @@ if __name__ == '__main__':
         # loss
         mseloss = nn.MSELoss().to(DEVICE)
 
-        OE.train()
-        P.train()
         # Run the training loop for defined number of epochs
         for epoch in range(num_epochs):
 

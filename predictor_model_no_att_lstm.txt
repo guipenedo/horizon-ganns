@@ -1,0 +1,384 @@
+FOLD 1
+--------------------------------
+Starting epoch 1
+Loss after mini-batch   500: 0.282
+Loss after mini-batch  1000: 0.205
+Loss after mini-batch  1500: 0.190
+Loss after mini-batch  2000: 0.188
+Loss after mini-batch  2500: 0.182
+Loss after mini-batch  3000: 0.172
+Loss after mini-batch  3500: 0.169
+Loss after mini-batch  4000: 0.173
+Loss after mini-batch  4500: 0.171
+Loss after mini-batch  5000: 0.170
+Loss after mini-batch  5500: 0.170
+Loss after mini-batch  6000: 0.172
+Starting testing
+Accuracy for fold 1, epoch 1: 94.968 %
+Precision for fold 1, epoch 1: 75.571 %
+Recall for fold 1, epoch 1: 41.933 %
+--------------------------------
+Starting epoch 2
+Loss after mini-batch   500: 0.168
+Loss after mini-batch  1000: 0.170
+Loss after mini-batch  1500: 0.164
+Loss after mini-batch  2000: 0.166
+Loss after mini-batch  2500: 0.161
+Loss after mini-batch  3000: 0.165
+Loss after mini-batch  3500: 0.163
+Loss after mini-batch  4000: 0.167
+Loss after mini-batch  4500: 0.167
+Loss after mini-batch  5000: 0.167
+Loss after mini-batch  5500: 0.173
+Loss after mini-batch  6000: 0.165
+Starting testing
+Accuracy for fold 1, epoch 2: 95.238 %
+Precision for fold 1, epoch 2: 75.746 %
+Recall for fold 1, epoch 2: 47.406 %
+--------------------------------
+Starting epoch 3
+Loss after mini-batch   500: 0.163
+Loss after mini-batch  1000: 0.166
+Loss after mini-batch  1500: 0.167
+Loss after mini-batch  2000: 0.161
+Loss after mini-batch  2500: 0.162
+Loss after mini-batch  3000: 0.161
+Loss after mini-batch  3500: 0.168
+Loss after mini-batch  4000: 0.161
+Loss after mini-batch  4500: 0.164
+Loss after mini-batch  5000: 0.160
+Loss after mini-batch  5500: 0.164
+Loss after mini-batch  6000: 0.162
+Starting testing
+Accuracy for fold 1, epoch 3: 95.345 %
+Precision for fold 1, epoch 3: 75.105 %
+Recall for fold 1, epoch 3: 50.490 %
+--------------------------------
+Starting epoch 4
+Loss after mini-batch   500: 0.160
+Loss after mini-batch  1000: 0.160
+Loss after mini-batch  1500: 0.167
+Loss after mini-batch  2000: 0.164
+Loss after mini-batch  2500: 0.164
+Loss after mini-batch  3000: 0.159
+Loss after mini-batch  3500: 0.164
+Loss after mini-batch  4000: 0.161
+Loss after mini-batch  4500: 0.161
+Loss after mini-batch  5000: 0.167
+Loss after mini-batch  5500: 0.162
+Loss after mini-batch  6000: 0.161
+Starting testing
+Accuracy for fold 1, epoch 4: 95.363 %
+Precision for fold 1, epoch 4: 75.726 %
+Recall for fold 1, epoch 4: 50.044 %
+--------------------------------
+Starting epoch 5
+Loss after mini-batch   500: 0.165
+Loss after mini-batch  1000: 0.159
+Loss after mini-batch  1500: 0.162
+Loss after mini-batch  2000: 0.158
+Loss after mini-batch  2500: 0.161
+Loss after mini-batch  3000: 0.160
+Loss after mini-batch  3500: 0.160
+Loss after mini-batch  4000: 0.163
+Loss after mini-batch  4500: 0.160
+Loss after mini-batch  5000: 0.162
+Loss after mini-batch  5500: 0.162
+Loss after mini-batch  6000: 0.161
+Starting testing
+Accuracy for fold 1, epoch 5: 95.351 %
+Precision for fold 1, epoch 5: 75.638 %
+Recall for fold 1, epoch 5: 49.910 %
+--------------------------------
+FOLD 2
+--------------------------------
+Starting epoch 1
+Loss after mini-batch   500: 0.279
+Loss after mini-batch  1000: 0.202
+Loss after mini-batch  1500: 0.192
+Loss after mini-batch  2000: 0.185
+Loss after mini-batch  2500: 0.178
+Loss after mini-batch  3000: 0.172
+Loss after mini-batch  3500: 0.170
+Loss after mini-batch  4000: 0.175
+Loss after mini-batch  4500: 0.168
+Loss after mini-batch  5000: 0.165
+Loss after mini-batch  5500: 0.167
+Loss after mini-batch  6000: 0.169
+Starting testing
+Accuracy for fold 2, epoch 1: 94.972 %
+Precision for fold 2, epoch 1: 73.795 %
+Recall for fold 2, epoch 1: 45.926 %
+--------------------------------
+Starting epoch 2
+Loss after mini-batch   500: 0.168
+Loss after mini-batch  1000: 0.171
+Loss after mini-batch  1500: 0.170
+Loss after mini-batch  2000: 0.164
+Loss after mini-batch  2500: 0.168
+Loss after mini-batch  3000: 0.167
+Loss after mini-batch  3500: 0.162
+Loss after mini-batch  4000: 0.163
+Loss after mini-batch  4500: 0.164
+Loss after mini-batch  5000: 0.167
+Loss after mini-batch  5500: 0.164
+Loss after mini-batch  6000: 0.165
+Starting testing
+Accuracy for fold 2, epoch 2: 95.191 %
+Precision for fold 2, epoch 2: 74.777 %
+Recall for fold 2, epoch 2: 49.319 %
+--------------------------------
+Starting epoch 3
+Loss after mini-batch   500: 0.163
+Loss after mini-batch  1000: 0.164
+Loss after mini-batch  1500: 0.157
+Loss after mini-batch  2000: 0.165
+Loss after mini-batch  2500: 0.166
+Loss after mini-batch  3000: 0.163
+Loss after mini-batch  3500: 0.160
+Loss after mini-batch  4000: 0.156
+Loss after mini-batch  4500: 0.164
+Loss after mini-batch  5000: 0.167
+Loss after mini-batch  5500: 0.164
+Loss after mini-batch  6000: 0.164
+Starting testing
+Accuracy for fold 2, epoch 3: 95.228 %
+Precision for fold 2, epoch 3: 73.946 %
+Recall for fold 2, epoch 3: 51.256 %
+--------------------------------
+Starting epoch 4
+Loss after mini-batch   500: 0.164
+Loss after mini-batch  1000: 0.163
+Loss after mini-batch  1500: 0.156
+Loss after mini-batch  2000: 0.162
+Loss after mini-batch  2500: 0.158
+Loss after mini-batch  3000: 0.160
+Loss after mini-batch  3500: 0.164
+Loss after mini-batch  4000: 0.164
+Loss after mini-batch  4500: 0.161
+Loss after mini-batch  5000: 0.156
+Loss after mini-batch  5500: 0.162
+Loss after mini-batch  6000: 0.161
+Starting testing
+Accuracy for fold 2, epoch 4: 95.251 %
+Precision for fold 2, epoch 4: 74.736 %
+Recall for fold 2, epoch 4: 50.631 %
+--------------------------------
+Starting epoch 5
+Loss after mini-batch   500: 0.161
+Loss after mini-batch  1000: 0.162
+Loss after mini-batch  1500: 0.158
+Loss after mini-batch  2000: 0.159
+Loss after mini-batch  2500: 0.157
+Loss after mini-batch  3000: 0.163
+Loss after mini-batch  3500: 0.161
+Loss after mini-batch  4000: 0.163
+Loss after mini-batch  4500: 0.161
+Loss after mini-batch  5000: 0.157
+Loss after mini-batch  5500: 0.161
+Loss after mini-batch  6000: 0.159
+Starting testing
+Accuracy for fold 2, epoch 5: 95.309 %
+Precision for fold 2, epoch 5: 74.416 %
+Recall for fold 2, epoch 5: 52.311 %
+--------------------------------
+FOLD 3
+--------------------------------
+Starting epoch 1
+Loss after mini-batch   500: 0.276
+Loss after mini-batch  1000: 0.205
+Loss after mini-batch  1500: 0.193
+Loss after mini-batch  2000: 0.187
+Loss after mini-batch  2500: 0.179
+Loss after mini-batch  3000: 0.175
+Loss after mini-batch  3500: 0.167
+Loss after mini-batch  4000: 0.169
+Loss after mini-batch  4500: 0.168
+Loss after mini-batch  5000: 0.171
+Loss after mini-batch  5500: 0.167
+Loss after mini-batch  6000: 0.171
+Starting testing
+Accuracy for fold 3, epoch 1: 95.069 %
+Precision for fold 3, epoch 1: 73.726 %
+Recall for fold 3, epoch 1: 46.622 %
+--------------------------------
+Starting epoch 2
+Loss after mini-batch   500: 0.168
+Loss after mini-batch  1000: 0.166
+Loss after mini-batch  1500: 0.168
+Loss after mini-batch  2000: 0.170
+Loss after mini-batch  2500: 0.169
+Loss after mini-batch  3000: 0.168
+Loss after mini-batch  3500: 0.164
+Loss after mini-batch  4000: 0.166
+Loss after mini-batch  4500: 0.166
+Loss after mini-batch  5000: 0.163
+Loss after mini-batch  5500: 0.162
+Loss after mini-batch  6000: 0.165
+Starting testing
+Accuracy for fold 3, epoch 2: 95.161 %
+Precision for fold 3, epoch 2: 75.255 %
+Recall for fold 3, epoch 2: 46.652 %
+--------------------------------
+Starting epoch 3
+Loss after mini-batch   500: 0.166
+Loss after mini-batch  1000: 0.164
+Loss after mini-batch  1500: 0.165
+Loss after mini-batch  2000: 0.163
+Loss after mini-batch  2500: 0.165
+Loss after mini-batch  3000: 0.161
+Loss after mini-batch  3500: 0.164
+Loss after mini-batch  4000: 0.164
+Loss after mini-batch  4500: 0.164
+Loss after mini-batch  5000: 0.163
+Loss after mini-batch  5500: 0.163
+Loss after mini-batch  6000: 0.161
+Starting testing
+Accuracy for fold 3, epoch 3: 95.246 %
+Precision for fold 3, epoch 3: 74.222 %
+Recall for fold 3, epoch 3: 49.832 %
+--------------------------------
+Starting epoch 4
+Loss after mini-batch   500: 0.161
+Loss after mini-batch  1000: 0.166
+Loss after mini-batch  1500: 0.164
+Loss after mini-batch  2000: 0.160
+Loss after mini-batch  2500: 0.160
+Loss after mini-batch  3000: 0.162
+Loss after mini-batch  3500: 0.158
+Loss after mini-batch  4000: 0.161
+Loss after mini-batch  4500: 0.159
+Loss after mini-batch  5000: 0.159
+Loss after mini-batch  5500: 0.161
+Loss after mini-batch  6000: 0.164
+Starting testing
+Accuracy for fold 3, epoch 4: 95.295 %
+Precision for fold 3, epoch 4: 75.670 %
+Recall for fold 3, epoch 4: 48.959 %
+--------------------------------
+Starting epoch 5
+Loss after mini-batch   500: 0.159
+Loss after mini-batch  1000: 0.166
+Loss after mini-batch  1500: 0.163
+Loss after mini-batch  2000: 0.159
+Loss after mini-batch  2500: 0.161
+Loss after mini-batch  3000: 0.162
+Loss after mini-batch  3500: 0.159
+Loss after mini-batch  4000: 0.159
+Loss after mini-batch  4500: 0.159
+Loss after mini-batch  5000: 0.157
+Loss after mini-batch  5500: 0.165
+Loss after mini-batch  6000: 0.161
+Starting testing
+Accuracy for fold 3, epoch 5: 95.355 %
+Precision for fold 3, epoch 5: 75.280 %
+Recall for fold 3, epoch 5: 50.726 %
+--------------------------------
+FOLD 4
+--------------------------------
+Starting epoch 1
+Loss after mini-batch   500: 0.278
+Loss after mini-batch  1000: 0.212
+Loss after mini-batch  1500: 0.199
+Loss after mini-batch  2000: 0.181
+Loss after mini-batch  2500: 0.171
+Loss after mini-batch  3000: 0.172
+Loss after mini-batch  3500: 0.169
+Loss after mini-batch  4000: 0.168
+Loss after mini-batch  4500: 0.168
+Loss after mini-batch  5000: 0.169
+Loss after mini-batch  5500: 0.168
+Loss after mini-batch  6000: 0.170
+Starting testing
+Accuracy for fold 4, epoch 1: 95.036 %
+Precision for fold 4, epoch 1: 72.814 %
+Recall for fold 4, epoch 1: 47.597 %
+--------------------------------
+Starting epoch 2
+Loss after mini-batch   500: 0.164
+Loss after mini-batch  1000: 0.167
+Loss after mini-batch  1500: 0.170
+Loss after mini-batch  2000: 0.162
+Loss after mini-batch  2500: 0.168
+Loss after mini-batch  3000: 0.166
+Loss after mini-batch  3500: 0.165
+Loss after mini-batch  4000: 0.162
+Loss after mini-batch  4500: 0.164
+Loss after mini-batch  5000: 0.168
+Loss after mini-batch  5500: 0.165
+Loss after mini-batch  6000: 0.164
+Starting testing
+Accuracy for fold 4, epoch 2: 95.205 %
+Precision for fold 4, epoch 2: 75.063 %
+Recall for fold 4, epoch 2: 48.249 %
+--------------------------------
+Starting epoch 3
+Loss after mini-batch   500: 0.164
+Loss after mini-batch  1000: 0.167
+Loss after mini-batch  1500: 0.159
+Loss after mini-batch  2000: 0.160
+Loss after mini-batch  2500: 0.166
+Loss after mini-batch  3000: 0.161
+Loss after mini-batch  3500: 0.162
+Loss after mini-batch  4000: 0.161
+Loss after mini-batch  4500: 0.159
+Loss after mini-batch  5000: 0.164
+Loss after mini-batch  5500: 0.164
+Loss after mini-batch  6000: 0.163
+Starting testing
+Accuracy for fold 4, epoch 3: 95.243 %
+Precision for fold 4, epoch 3: 73.235 %
+Recall for fold 4, epoch 3: 51.634 %
+--------------------------------
+Starting epoch 4
+Loss after mini-batch   500: 0.159
+Loss after mini-batch  1000: 0.161
+Loss after mini-batch  1500: 0.162
+Loss after mini-batch  2000: 0.163
+Loss after mini-batch  2500: 0.160
+Loss after mini-batch  3000: 0.166
+Loss after mini-batch  3500: 0.162
+Loss after mini-batch  4000: 0.158
+Loss after mini-batch  4500: 0.158
+Loss after mini-batch  5000: 0.162
+Loss after mini-batch  5500: 0.162
+Loss after mini-batch  6000: 0.162
+Starting testing
+Accuracy for fold 4, epoch 4: 95.263 %
+Precision for fold 4, epoch 4: 73.798 %
+Recall for fold 4, epoch 4: 51.241 %
+--------------------------------
+Starting epoch 5
+Loss after mini-batch   500: 0.162
+Loss after mini-batch  1000: 0.159
+Loss after mini-batch  1500: 0.158
+Loss after mini-batch  2000: 0.160
+Loss after mini-batch  2500: 0.162
+Loss after mini-batch  3000: 0.161
+Loss after mini-batch  3500: 0.157
+Loss after mini-batch  4000: 0.162
+Loss after mini-batch  4500: 0.164
+Loss after mini-batch  5000: 0.161
+Loss after mini-batch  5500: 0.160
+Loss after mini-batch  6000: 0.156
+Starting testing
+Accuracy for fold 4, epoch 5: 95.323 %
+Precision for fold 4, epoch 5: 76.059 %
+Recall for fold 4, epoch 5: 49.448 %
+--------------------------------
+K-FOLD CROSS VALIDATION RESULTS FOR 4 FOLDS
+--------------------------------
+Fold 1: A=95.25300598144531% P=75.55697631835938% R=47.956581115722656%
+Fold 2: A=95.1902847290039% P=74.33396911621094% R=49.88867950439453%
+Fold 3: A=95.2249755859375% P=74.8306655883789% R=48.5583610534668%
+Fold 4: A=95.21397399902344% P=74.19387817382812% R=49.63396453857422%
+K-FOLD CROSS VALIDATION RESULTS FOR 5 EPOCHS
+--------------------------------
+Epoch 1: A=95.01104736328125% P=73.97633361816406% R=45.519630432128906%
+Epoch 2: A=95.1987533569336% P=75.21057891845703% R=47.906646728515625%
+Epoch 3: A=95.26571655273438% P=74.1270980834961% R=50.803009033203125%
+Epoch 4: A=95.29298400878906% P=74.98225402832031% R=50.21893310546875%
+Epoch 5: A=95.33428955078125% P=75.34809875488281% R=50.598758697509766%
+K-FOLD CROSS VALIDATION GLOBAL RESULTS
+--------------------------------
+A=95.2205581665039% P=74.72887420654297% R=49.009395599365234%

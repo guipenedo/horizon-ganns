@@ -28,7 +28,9 @@ beta1 = 0.9
 beta2 = 0.999
 
 # Data config
-game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta"]
+game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta",
+                      "tree_1", "tree_2", "tree_3", "tree_4", "tree_5", "tree_6",
+                      "tree_7", "tree_8", "tree_9"]
 player_output_columns = ["key_front", "key_back", "key_left", "key_right", "key_space"]
 game_state_dim = len(game_state_columns)
 player_output_dim = len(player_output_columns)
@@ -93,6 +95,7 @@ class Predictor(nn.Module):
         # FC, final size = output_size
         out = self.fc_layers(out)  # N x 1 x output_size
         return out
+
 
 #
 # def train_model(num_epochs=10):
@@ -255,7 +258,7 @@ if __name__ == '__main__':
         for epoch in range(num_epochs):
 
             # Print epoch
-            print(f'Starting epoch {epoch+1}')
+            print(f'Starting epoch {epoch + 1}')
 
             # Set current loss value
             current_loss = 0.0

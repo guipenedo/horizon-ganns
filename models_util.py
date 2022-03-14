@@ -3,7 +3,7 @@ import torch
 import pandas as pd
 import numpy as np
 from os.path import sep
-from datasets import move_keys_full_state_no_keys_dataset
+# from datasets import move_keys_full_state_no_keys_dataset
 
 MODEL_DATA_DIR = "model_data"
 
@@ -23,22 +23,22 @@ MAX_KEYPRESSES = 10
 
 NOISE_RATE = 9999
 
-data_loader_no_keys = DataLoader(move_keys_full_state_no_keys_dataset, batch_size=batch_size, shuffle=True)
-no_keys_iter = iter(data_loader_no_keys)
+# data_loader_no_keys = DataLoader(move_keys_full_state_no_keys_dataset, batch_size=batch_size, shuffle=True)
+# no_keys_iter = iter(data_loader_no_keys)
 
 
 # loss discriminator: relu(1 + d_fake) + relu(1 - d_true)
 # no sigmoid discriminator
 
-
-def get_fake_game_state():
-    global no_keys_iter
-    try:
-        _, fake_game_state = next(no_keys_iter)
-        return fake_game_state
-    except Exception:
-        no_keys_iter = iter(data_loader_no_keys)
-        return get_fake_game_state()
+#
+# def get_fake_game_state():
+#     global no_keys_iter
+#     try:
+#         _, fake_game_state = next(no_keys_iter)
+#         return fake_game_state
+#     except Exception:
+#         no_keys_iter = iter(data_loader_no_keys)
+#         return get_fake_game_state()
 
 
 def get_fake_water_state():

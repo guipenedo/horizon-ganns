@@ -44,6 +44,8 @@ dataset = SplitSequencesDataset(dataset_path,
 class Encoder(nn.Module):
     def __init__(self, input_size, encoding_size, n_layers=2):
         super(Encoder, self).__init__()
+        # dropout
+        self.dropout = nn.Dropout(0.3)
         # Linear embedding obsv_size x h
         self.embed = nn.Linear(input_size, encoding_size)
         # The LSTM cell.
@@ -51,6 +53,8 @@ class Encoder(nn.Module):
         self.lstm = nn.LSTM(encoding_size, encoding_size, num_layers=n_layers, batch_first=True)
 
     def forward(self, obsv):
+        # dropout
+        obsv = self.dropout(obsv)
         # Linear embedding
         obsv = self.embed(obsv)
         # Reshape and applies LSTM over a whole sequence or over one single step
@@ -65,12 +69,16 @@ class Predictor(nn.Module):
         self.output_size = output_size
 
         self.fc_layers = nn.Sequential(
+            nn.Dropout(0.3),
             nn.Linear(encoding_size, hidden_size),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.3),
             nn.Linear(hidden_size, hidden_size // 2),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.3),
             nn.Linear(hidden_size // 2, hidden_size // 4),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.3),
             nn.Linear(hidden_size // 4, output_size),
             nn.Tanh()
         )
@@ -193,11 +201,11 @@ def extract_data(data):
 if __name__ == '__main__':
 
     # Configuration options
-    k_folds = 5
-    num_epochs = 10
+    k_folds = 4
+    num_epochs = 5
 
     # For fold results
-    results = {}
+    results = torch.zeros((k_folds, num_epochs, 3))
 
     # Set fixed random number seed
     torch.manual_seed(42)
@@ -205,10 +213,12 @@ if __name__ == '__main__':
     # Define the K-fold Cross Validator
     kfold = KFold(n_splits=k_folds, shuffle=True)
 
-    pbar = tqdm(total=num_epochs * k_folds * (len(dataset) // k_folds + 1))
-    for fold, (train_ids, test_ids) in enumerate(kfold.split(dataset)):
+    folds = kfold.split(dataset)
+    folds = list(folds)
+    pbar = tqdm(total=num_epochs * (k_folds) * (len(folds[0][0]) // batch_size))
+    for fold, (train_ids, test_ids) in enumerate(folds):
         # Print
-        print(f'FOLD {fold}')
+        print(f'FOLD {fold + 1}')
         print('--------------------------------')
 
         # Sample elements randomly from a given list of ids, no replacement.
@@ -234,8 +244,6 @@ if __name__ == '__main__':
         # loss
         mseloss = nn.MSELoss().to(DEVICE)
 
-        OE.train()
-        P.train()
         # Run the training loop for defined number of epochs
         for epoch in range(num_epochs):
 
@@ -246,6 +254,8 @@ if __name__ == '__main__':
             current_loss = 0.0
 
             # Iterate over the DataLoader for training data
+            OE.train()
+            P.train()
             for batch_i, data in enumerate(trainloader):
                 # extract data
                 observed_keys, real_future_keys, observed_game_state = extract_data(data)
@@ -280,54 +290,69 @@ if __name__ == '__main__':
                     current_loss = 0.0
                 pbar.update()
 
-        # Process is complete.
-        print('Training process has finished. Saving trained model.')
+            # Saving the model
+            save_path = f'{SAVEDIR}{MODEL_SAVE_FILENAME}-{fold}-epoch-{epoch}.pth'
+            save_model(save_path)
 
-        # Print about testing
-        print('Starting testing')
+            # Evaluation for this fold
+            # Print about testing
+            print('Starting testing')
+            OE.eval()
+            P.eval()
+            matches, total, correct_presses, total_presses, actual_total_presses = 0, 0, 0, 0, 0
+            with torch.no_grad():
 
-        # Saving the model
-        save_path = f'{SAVEDIR}{MODEL_SAVE_FILENAME}-{fold}.pth'
-        save_model(save_path)
+                # Iterate over the test data and generate predictions
+                for ba_i, data in enumerate(testloader, 0):
+                    # extract data
+                    observed_keys, real_future_keys, observed_game_state = extract_data(data)
 
-        # Evaluation for this fold
-        OE.eval()
-        P.eval()
-        correct, total = 0, 0
-        with torch.no_grad():
+                    # encode
+                    game_state_encoding = OE(torch.cat((observed_game_state, observed_keys), dim=2))
 
-            # Iterate over the test data and generate predictions
-            for ba_i, data in enumerate(testloader, 0):
-                # extract data
-                observed_keys, real_future_keys, observed_game_state = extract_data(data)
+                    # sample latent vector
+                    # z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
 
-                # encode
-                game_state_encoding = OE(torch.cat((observed_game_state, observed_keys), dim=2))
+                    # predict
+                    predicted_future_keys = P(game_state_encoding)
 
-                # sample latent vector
-                # z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
+                    # Set total and correct
+                    binary_prediction = (predicted_future_keys > 0).float()
+                    binary_target = (real_future_keys > 0).float()
 
-                # predict
-                predicted_future_keys = P(game_state_encoding)
+                    total += torch.numel(binary_target)
+                    total_presses += torch.sum(binary_prediction).item()  # count positives
+                    correct_presses += torch.sum(torch.mul(binary_prediction,
+                                                           binary_target)).item()  # multiply so only correct presses remain
+                    actual_total_presses += torch.sum(binary_target).item()  # count real positives
+                    matches += torch.numel(binary_target) - torch.sum(
+                        torch.abs(binary_prediction - binary_target)).item()
 
-                # Set total and correct
-                binary_prediction = (predicted_future_keys > 0).float()
-                binary_target = (real_future_keys > 0).float()
+                # Print accuracy
+                accuracy = 100.0 * matches / total
+                precision = 100.0 * correct_presses / total_presses
+                recall = 100.0 * correct_presses / actual_total_presses
+                print('Accuracy for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, accuracy))
+                print('Precision for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, precision))
+                print('Recall for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, recall))
+                print('--------------------------------')
+                results[fold][epoch][0] = accuracy
+                results[fold][epoch][1] = precision
+                results[fold][epoch][2] = recall
 
-                total += torch.numel(binary_target)
-                correct += torch.sum(torch.abs(binary_prediction - binary_target)).item()
-
-            # Print accuracy
-            print('Accuracy for fold %d: %d %%' % (fold, 100.0 * correct / total))
-            print('--------------------------------')
-            results[fold] = 100.0 * (correct / total)
-
-            # Print fold results
-        print(f'K-FOLD CROSS VALIDATION RESULTS FOR {k_folds} FOLDS')
-        print('--------------------------------')
-        sum = 0.0
-        for key, value in results.items():
-            print(f'Fold {key}: {value} %')
-            sum += value
-        print(f'Average: {sum/len(results.items())} %')
+    # Print fold results
+    print(f'K-FOLD CROSS VALIDATION RESULTS FOR {k_folds} FOLDS')
+    print('--------------------------------')
+    fold_avg = torch.mean(results, dim=1)  # k_folds x 3
+    for fold in range(k_folds):
+        print(f'Fold {fold + 1}: A={fold_avg[fold][0]}% P={fold_avg[fold][1]}% R={fold_avg[fold][2]}%')
+    print(f'K-FOLD CROSS VALIDATION RESULTS FOR {num_epochs} EPOCHS')
+    print('--------------------------------')
+    epoch_avg = torch.mean(results, dim=0)  # num_epochs x 3
+    for epoch in range(num_epochs):
+        print(f'Epoch {epoch + 1}: A={epoch_avg[epoch][0]}% P={epoch_avg[epoch][1]}% R={epoch_avg[epoch][2]}%')
+    print(f'K-FOLD CROSS VALIDATION GLOBAL RESULTS')
+    print('--------------------------------')
+    global_avg = torch.mean(results, dim=[0, 1])  # 3
+    print(f'A={global_avg[0]}% P={global_avg[1]}% R={global_avg[2]}%')
     pbar.close()

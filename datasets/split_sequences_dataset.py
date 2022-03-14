@@ -33,9 +33,9 @@ class SplitSequencesDataset(Dataset):
         return len(self.data_files)
 
 
-dataset = SplitSequencesDataset("processed_data/normalized_sequences", smooth_labels=True)
-dataset10s = SplitSequencesDataset("processed_data/normalized_sequences_10s", smooth_labels=True)
-dataset30s = SplitSequencesDataset("processed_data/normalized_sequences_30s", smooth_labels=True)
+# dataset = SplitSequencesDataset("processed_data/normalized_sequences", smooth_labels=True)
+# dataset10s = SplitSequencesDataset("processed_data/normalized_sequences_10s", smooth_labels=True)
+# dataset30s = SplitSequencesDataset("processed_data/normalized_sequences_30s", smooth_labels=True)
 
 
 def pad_collate(batch):

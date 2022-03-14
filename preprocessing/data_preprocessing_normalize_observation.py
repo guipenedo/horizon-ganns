@@ -5,10 +5,10 @@ from os.path import sep
 
 OBS_SECS = 5
 
-output_dir = os.getenv("OUTPUT_DIR")
+output_dir = os.getenv("OUTPUT_DIR", "processed_data/observations_5s")
 os.makedirs(output_dir, exist_ok=True)
 
-raw_data_folder = os.getenv("INPUT_DIR")
+raw_data_folder = os.getenv("INPUT_DIR", "recorded_csv_data2")
 
 
 def get_name_list(base, count):

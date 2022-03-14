@@ -1,0 +1,65 @@
+Accuracy for fold 1, epoch 0: 95 %
+Precision for fold 1, epoch 0: 74 %
+Recall for fold 1, epoch 0: 48 %
+--------------------------------
+Accuracy for fold 1, epoch 1: 95 %
+Precision for fold 1, epoch 1: 74 %
+Recall for fold 1, epoch 1: 48 %
+--------------------------------
+Accuracy for fold 1, epoch 2: 95 %
+Precision for fold 1, epoch 2: 75 %
+Recall for fold 1, epoch 2: 49 %
+--------------------------------
+Accuracy for fold 1, epoch 3: 95 %
+Precision for fold 1, epoch 3: 76 %
+Recall for fold 1, epoch 3: 48 %
+--------------------------------
+Accuracy for fold 1, epoch 4: 95 %
+Precision for fold 1, epoch 4: 76 %
+Recall for fold 1, epoch 4: 49 %
+--------------------------------
+Accuracy for fold 2, epoch 0: 94 %
+Precision for fold 2, epoch 0: 72 %
+Recall for fold 2, epoch 0: 46 %
+--------------------------------
+Accuracy for fold 2, epoch 1: 95 %
+Precision for fold 2, epoch 1: 74 %
+Recall for fold 2, epoch 1: 48 %
+--------------------------------
+Accuracy for fold 2, epoch 2: 95 %
+Precision for fold 2, epoch 2: 73 %
+Recall for fold 2, epoch 2: 49 %
+--------------------------------
+Accuracy for fold 2, epoch 3: 95 %
+Precision for fold 2, epoch 3: 75 %
+Recall for fold 2, epoch 3: 48 %
+--------------------------------
+Accuracy for fold 2, epoch 4: 95 %
+Precision for fold 2, epoch 4: 74 %
+Recall for fold 2, epoch 4: 51 %
+--------------------------------
+Accuracy for fold 3, epoch 0: 95 %
+Precision for fold 3, epoch 0: 73 %
+Recall for fold 3, epoch 0: 51 %
+--------------------------------
+Accuracy for fold 3, epoch 1: 95 %
+Precision for fold 3, epoch 1: 75 %
+Recall for fold 3, epoch 1: 49 %
+--------------------------------
+Accuracy for fold 3, epoch 2: 95 %
+Precision for fold 3, epoch 2: 74 %
+Recall for fold 3, epoch 2: 50 %
+--------------------------------
+Accuracy for fold 3, epoch 3: 95 %
+Precision for fold 3, epoch 3: 74 %
+Recall for fold 3, epoch 3: 49 %
+--------------------------------
+Accuracy for fold 3, epoch 4: 95 %
+Precision for fold 3, epoch 4: 74 %
+Recall for fold 3, epoch 4: 50 %
+--------------------------------
+K-FOLD CROSS VALIDATION RESULTS FOR 4 FOLDS
+--------------------------------
+Fold 1: A=95.26252746582031% P=75.39765930175781% R=49.12407684326172%
+Fold 2: A=95.1408462524414% P=74.11900329589844% R=48.754150390625%
+Fold 3: A=95.27498626708984% P=74.41456604003906% R=50.4183235168457%

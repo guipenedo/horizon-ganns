@@ -18,12 +18,17 @@ from sklearn.model_selection import KFold
 obs_encoding_size = 128
 nr_observations = 5
 
-# Predictor parameters
+# Discriminator parameters
+d_hidden_size = 256
+
+# Generator parameters
 g_hidden_size = 512
 g_latent_dim = 100
 
 # Optimization parameters
+l2_loss_weight = 0.001
 lr_g = 0.0001
+lr_d = 0.0004
 beta1 = 0.9
 beta2 = 0.999
 
@@ -35,7 +40,6 @@ player_output_dim = len(player_output_columns)
 batch_size = 32
 
 dataset_path = os.getenv("OBSERVATIONS_DIR", "processed_data/observations_5s")
-
 dataset = SplitSequencesDataset(dataset_path,
                                 x_columns=player_output_columns,
                                 y_columns=game_state_columns,
@@ -45,35 +49,28 @@ dataset = SplitSequencesDataset(dataset_path,
 class Encoder(nn.Module):
     def __init__(self, input_size, encoding_size, n_layers=2):
         super(Encoder, self).__init__()
-        # dropout
-        self.dropout = nn.Dropout(0.3)
         # Linear embedding obsv_size x h
-        self.embed = nn.Linear(input_size, encoding_size)
+        self.embed = nn.Sequential(nn.Dropout(0.3),
+                                   nn.Linear(input_size, encoding_size),
+                                   nn.LeakyReLU(0.2, inplace=True))
         # The LSTM cell.
         # Input dimension (observations mapped through embedding) is the same as the output
         self.lstm = nn.LSTM(encoding_size, encoding_size, num_layers=n_layers, batch_first=True)
 
     def forward(self, obsv):
-        # dropout
-        obsv = self.dropout(obsv)
-        # Linear embedding
+        # embedding
         obsv = self.embed(obsv)
         # Reshape and applies LSTM over a whole sequence or over one single step
         y, _ = self.lstm(obsv)
-        return y
+        return y[:, -1:, :]  # N x 1 x encoding_size
 
 
-class Predictor(nn.Module):
-    def __init__(self, encoding_size, hidden_size, output_size):
-        super(Predictor, self).__init__()
-        self.hidden_size = hidden_size
-        self.output_size = output_size
-        # Q is prev state, K,V are the entire encoded sequence
-        self.attn = nn.MultiheadAttention(embed_dim=encoding_size, kdim=encoding_size, vdim=encoding_size,
-                                          num_heads=1, dropout=0.3, batch_first=True)
+class Generator(nn.Module):
+    def __init__(self, encoding_size, hidden_size, latent_dim, output_size):
+        super(Generator, self).__init__()
         self.fc_layers = nn.Sequential(
             nn.Dropout(0.3),
-            nn.Linear(encoding_size, hidden_size),
+            nn.Linear(encoding_size + latent_dim, hidden_size),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout(0.3),
             nn.Linear(hidden_size, hidden_size // 2),
@@ -86,13 +83,34 @@ class Predictor(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, encoded):
-        last_encoded_state = encoded[:, -1:, :]
-        # attention
-        out, _ = self.attn(last_encoded_state, encoded, encoded)  # N x 1 x encoding_size
+    def forward(self, last_encoded_state, z):  # N x 1 x encoding_size
+        encoding_with_z = torch.cat((last_encoded_state, z), dim=2)
         # FC, final size = output_size
-        out = self.fc_layers(out)  # N x 1 x output_size
+        out = self.fc_layers(encoding_with_z)  # N x 1 x output_size
         return out
+
+
+class Discriminator(nn.Module):
+    def __init__(self, encoding_size, hidden_size, output_size):
+        super(Discriminator, self).__init__()
+        self.fc_layer = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(output_size + encoding_size, hidden_size),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(hidden_size, hidden_size // 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(hidden_size // 2, hidden_size // 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(0.3),
+            nn.Linear(hidden_size // 4, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, encoded, future_action):
+        prediction_with_encoding = torch.cat((encoded, future_action), dim=2)
+        return self.fc_layer(prediction_with_encoding)
 
 #
 # def train_model(num_epochs=10):
@@ -167,7 +185,7 @@ class Predictor(nn.Module):
 #     return d_losses, g_losses
 
 
-MODEL_SAVE_FILENAME = "predictor_model_att"
+MODEL_SAVE_FILENAME = "predictor_gan"
 SAVEDIR = MODEL_DATA_DIR + sep
 SAVEFILE_PATH = SAVEDIR + MODEL_SAVE_FILENAME + ".pt"
 
@@ -175,21 +193,9 @@ SAVEFILE_PATH = SAVEDIR + MODEL_SAVE_FILENAME + ".pt"
 def save_model(filename=SAVEFILE_PATH):
     data = {
         'obs_encoder': OE.state_dict(),
-        'predictor': P.state_dict()
+        'predictor': G.state_dict()
     }
     torch.save(data, filename)
-
-
-def load_model(filename=SAVEFILE_PATH):
-    data = torch.load(filename, map_location=DEVICE)
-    P.load_state_dict(data['predictor'])
-    OE.load_state_dict(data['obs_encoder'])
-
-
-def save_losses(g_losses, d_losses):
-    losses = np.array([g_losses, d_losses]).transpose()
-    df = pd.DataFrame(losses, columns=["generator_loss", "discriminator_loss"])
-    df.to_csv(MODEL_DATA_DIR + sep + MODEL_SAVE_FILENAME + ".csv", index=False)
 
 
 def extract_data(data):
@@ -220,7 +226,7 @@ if __name__ == '__main__':
 
     folds = kfold.split(dataset)
     folds = list(folds)
-    pbar = tqdm(total=num_epochs * (k_folds) * (len(folds[0][0]) // batch_size))
+    pbar = tqdm(total=num_epochs * k_folds * (len(folds[0][0]) // batch_size))
     for fold, (train_ids, test_ids) in enumerate(folds):
         # Print
         print(f'FOLD {fold + 1}')
@@ -237,20 +243,24 @@ if __name__ == '__main__':
         # Observations encoder
         OE = Encoder(game_state_dim + player_output_dim, obs_encoding_size).to(DEVICE)
 
-        # Predictor
-        P = Predictor(obs_encoding_size, g_hidden_size, player_output_dim).to(DEVICE)
+        # Generator
+        G = Generator(obs_encoding_size, g_hidden_size, g_latent_dim, player_output_dim).to(DEVICE)
+
+        # Discriminator
+        D = Discriminator(obs_encoding_size, d_hidden_size, player_output_dim).to(DEVICE)
 
         OE.float()
-        P.float()
+        G.float()
+        D.float()
 
         # optimizer
-        p_optimizer = optim.Adam(chain(P.parameters(), OE.parameters()), lr=lr_g, betas=(beta1, beta2))
+        g_optimizer = optim.Adam(chain(G.parameters(), OE.parameters()), lr=lr_g, betas=(beta1, beta2))
+        d_optimizer = optim.Adam(chain(D.parameters(), OE.parameters()), lr=lr_d, betas=(beta1, beta2))
 
         # loss
         mseloss = nn.MSELoss().to(DEVICE)
+        adversarial_loss = nn.BCELoss().to(DEVICE)
 
-        OE.train()
-        P.train()
         # Run the training loop for defined number of epochs
         for epoch in range(num_epochs):
 
@@ -258,43 +268,77 @@ if __name__ == '__main__':
             print(f'Starting epoch {epoch+1}')
 
             # Set current loss value
-            current_loss = 0.0
+            current_d_loss = 0.0
+            current_g_loss = 0.0
 
             # Iterate over the DataLoader for training data
             OE.train()
-            P.train()
+            G.train()
             for batch_i, data in enumerate(trainloader):
                 # extract data
                 observed_keys, real_future_keys, observed_game_state = extract_data(data)
 
-                # Zero the gradients
-                p_optimizer.zero_grad()
+                """
+                    Generator
+                """
+                # zero gradients
+                g_optimizer.zero_grad()
 
                 # forward pass
                 # encode
                 game_state_encoding = OE(torch.cat((observed_game_state, observed_keys), dim=2))
 
                 # sample latent vector
-                # z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
+                z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
 
                 # predict
-                predicted_future_keys = P(game_state_encoding)
+                predicted_future_keys = G(game_state_encoding, z)
+
+                # validity
+                validity_predicted = D(game_state_encoding, predicted_future_keys)
 
                 # loss
-                p_loss = mseloss(predicted_future_keys, real_future_keys)
+                g_loss = adversarial_loss(validity_predicted, torch.ones_like(validity_predicted, device=DEVICE))
+                g_loss += l2_loss_weight * mseloss(predicted_future_keys, real_future_keys)
 
                 # backward pass
-                p_loss.backward()
+                g_loss.backward()
 
                 # optimization
-                p_optimizer.step()
+                g_optimizer.step()
+
+                """
+                    Discriminator
+                """
+                # zero gradients
+                d_optimizer.zero_grad()
+
+                # encode
+                game_state_encoding = OE(torch.cat((observed_game_state, observed_keys), dim=2))
+
+                # validity
+                validity_gt = D(game_state_encoding, real_future_keys)
+                validity_predicted = D(game_state_encoding, predicted_future_keys.detach())
+
+                # loss
+                d_loss = 0.5 * adversarial_loss(validity_predicted,
+                                                torch.zeros_like(validity_predicted, device=DEVICE))
+                d_loss += 0.5 * adversarial_loss(validity_gt,
+                                                 torch.ones_like(validity_gt, device=DEVICE))
+
+                # backward pass
+                d_loss.backward()
+
+                # optimization
+                d_optimizer.step()
 
                 # Print statistics
-                current_loss += p_loss.item()
+                current_g_loss += g_loss.item()
+                current_d_loss += d_loss.item()
                 if batch_i % 500 == 499:
-                    print('Loss after mini-batch %5d: %.3f' %
-                          (batch_i + 1, current_loss / 500))
-                    current_loss = 0.0
+                    print(f'Loss after mini-batch {batch_i + 1}: g={current_g_loss / 500} d={current_d_loss / 500}')
+                    current_g_loss = 0.0
+                    current_d_loss = 0.0
                 pbar.update()
 
             # Saving the model
@@ -305,7 +349,7 @@ if __name__ == '__main__':
             # Print about testing
             print('Starting testing')
             OE.eval()
-            P.eval()
+            G.eval()
             matches, total, correct_presses, total_presses, actual_total_presses = 0, 0, 0, 0, 0
             with torch.no_grad():
 
@@ -318,10 +362,10 @@ if __name__ == '__main__':
                     game_state_encoding = OE(torch.cat((observed_game_state, observed_keys), dim=2))
 
                     # sample latent vector
-                    # z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
+                    z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
 
                     # predict
-                    predicted_future_keys = P(game_state_encoding)
+                    predicted_future_keys = G(game_state_encoding, z)
 
                     # Set total and correct
                     binary_prediction = (predicted_future_keys > 0).float()
@@ -337,8 +381,8 @@ if __name__ == '__main__':
 
                 # Print accuracy
                 accuracy = 100.0 * matches / total
-                precision = 100.0 * correct_presses / total_presses
-                recall = 100.0 * correct_presses / actual_total_presses
+                precision = 100.0 * correct_presses / total_presses if total_presses > 0 else 0
+                recall = 100.0 * correct_presses / actual_total_presses if actual_total_presses > 0 else 0
                 print('Accuracy for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, accuracy))
                 print('Precision for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, precision))
                 print('Recall for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, recall))
