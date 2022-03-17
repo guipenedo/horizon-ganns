@@ -1,4 +1,3 @@
-import os
 from os.path import sep
 
 import optuna
@@ -8,10 +7,12 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from datasets import SplitSequencesDataset
-from models_util import DEVICE, MODEL_DATA_DIR
+from split_sequences_dataset import SplitSequencesDataset
 from itertools import chain
 from sklearn.model_selection import KFold
+
+MAIN_DATA_PATH = "/scratch/students/g.cabral"
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Observations parameters
 # obs_encoding_size = 128
@@ -39,7 +40,7 @@ game_state_dim = len(game_state_columns)
 player_output_dim = len(player_output_columns)
 batch_size = 32
 
-dataset_path = os.getenv("OBSERVATIONS_DIR", "processed_data/observations_5s")
+dataset_path = MAIN_DATA_PATH + "/observations_5s"
 dataset = SplitSequencesDataset(dataset_path,
                                 x_columns=player_output_columns,
                                 y_columns=game_state_columns,
@@ -113,9 +114,21 @@ class Discriminator(nn.Module):
         return self.fc_layer(prediction_with_encoding)
 
 
-MODEL_SAVE_FILENAME = "predictor_gan_v_loss"
-SAVEDIR = MODEL_DATA_DIR + sep
+MODEL_SAVE_FILENAME = "predictor_gan_v_loss_optuna"
+SAVEDIR = MAIN_DATA_PATH + sep + "saves" + sep
 SAVEFILE_PATH = SAVEDIR + MODEL_SAVE_FILENAME + ".pt"
+
+
+def save_model(trial_count, fold, epoch, losses, validation, hyperparams, OE, G, D):
+    data = {
+        'losses': losses,
+        'validation': validation,
+        'hyperparams': hyperparams,
+        'obs_encoder': OE.state_dict(),
+        'generator': G.state_dict(),
+        'discriminator': D.state_dict(),
+    }
+    torch.save(data, SAVEDIR + MODEL_SAVE_FILENAME + f"-{trial_count}-f{fold}-e{epoch}.pt")
 
 
 def extract_data(data):
@@ -129,25 +142,47 @@ def extract_data(data):
     return observed_keys, real_future_keys, observed_game_state
 
 
+trial_count = 0
+
+
+def update_validation_stats(stats, binary_prediction, binary_target, bin_class=1):
+    if bin_class == 0:
+        binary_prediction = (binary_prediction == 0).float()
+        binary_target = (binary_target == 0).float()
+    stats['total_presses'] += torch.sum(binary_prediction).item()  # count positives
+    stats['correct_presses'] += torch.sum(torch.mul(binary_prediction,
+                                           binary_target)).item()  # multiply so only correct presses remain
+    stats['actual_total_presses'] += torch.sum(binary_target).item()  # count real positives
+
+
 def objective(trial):
-    obs_encoding_size = trial.suggest_int('obs_encoding_size', 16, 128*2, step=16)
-    d_hidden_size = trial.suggest_int('d_hidden_size', 128, 256*2, step=32)
+    global trial_count
+    trial_count += 1
+    obs_encoding_size = trial.suggest_int('obs_encoding_size', 16, 128 * 2, step=16)
+    d_hidden_size = trial.suggest_int('d_hidden_size', 128, 256 * 2, step=32)
     g_hidden_size = trial.suggest_int('g_hidden_size', 128, 512 * 2, step=64)
     l2_loss_weight = trial.suggest_loguniform('l2_loss_weight', 1e-5, 1)
     variety_loss_k = trial.suggest_int('variety_loss_k', 1, 5)
     lr_g = trial.suggest_loguniform('lr_g', 1e-5, 1e-1)
     lr_d = trial.suggest_loguniform('lr_d', 1e-5, 1e-1)
 
+    hyperparams = {
+        'obs_encoding_size': obs_encoding_size,
+        'd_hidden_size': d_hidden_size,
+        'g_hidden_size': g_hidden_size,
+        'l2_loss_weight': l2_loss_weight,
+        'variety_loss_k': variety_loss_k,
+        'lr_g': lr_g,
+        'lr_d': lr_d
+    }
+
     print(
-        f"Running for {obs_encoding_size=} {d_hidden_size=} {g_hidden_size=} {l2_loss_weight} "
-        f"{variety_loss_k=} {lr_g=} {lr_d=} {beta1=} {beta2=}")
+        f"Running for obs_encoding_size={obs_encoding_size} d_hidden_size={d_hidden_size} g_hidden_size={g_hidden_size} l2_loss_weight={l2_loss_weight} "
+        f"variety_loss_k={variety_loss_k} lr_g={lr_g} lr_d={lr_d}")
 
     # Configuration options
     k_folds = 4
-    num_epochs = 3
-
-    # For fold results
-    results = torch.zeros((k_folds, num_epochs, 3))
+    num_epochs = 10
 
     # Set fixed random number seed
     torch.manual_seed(42)
@@ -155,9 +190,11 @@ def objective(trial):
     # Define the K-fold Cross Validator
     kfold = KFold(n_splits=k_folds, shuffle=True)
 
+    last_for_each_fold = torch.zeros(k_folds, 4)
+
     folds = kfold.split(dataset)
     folds = list(folds)
-    pbar = tqdm(total=num_epochs * (len(folds[0][0]) // batch_size))
+    pbar = tqdm(total=num_epochs * k_folds * (len(folds[0][0]) // batch_size))
     for fold, (train_ids, test_ids) in enumerate(folds):
         # Print
         print(f'FOLD {fold + 1}')
@@ -192,19 +229,28 @@ def objective(trial):
         mseloss = nn.MSELoss().to(DEVICE)
         adversarial_loss = nn.BCELoss().to(DEVICE)
 
+        # early stopping
+        iters_no_improv = 0
+
         # Run the training loop for defined number of epochs
         for epoch in range(num_epochs):
 
             # Print epoch
-            print(f'Starting epoch {epoch+1}')
+            print(f'Starting epoch {epoch + 1}')
 
             # Set current loss value
             current_d_loss = 0.0
             current_g_loss = 0.0
 
+            # save losses
+            g_adversarial_losses = []
+            g_variety_losses = []
+            d_losses = []
+
             # Iterate over the DataLoader for training data
             OE.train()
             G.train()
+            D.train()
             for batch_i, data in enumerate(trainloader):
                 # extract data
                 observed_keys, real_future_keys, observed_game_state = extract_data(data)
@@ -239,7 +285,14 @@ def objective(trial):
                     if variety_loss is None or l2_loss.item() < variety_loss.item():
                         variety_loss = l2_loss
 
-                g_loss = g_loss / variety_loss_k + l2_loss_weight * variety_loss
+                # compute loss
+                g_adv_loss = g_loss / variety_loss_k
+                g_variety_loss = l2_loss_weight * variety_loss
+                g_loss = g_adv_loss + g_variety_loss
+
+                # save losses
+                g_adversarial_losses.append(g_adv_loss.item())
+                g_variety_losses.append(g_variety_loss.item())
 
                 # backward pass
                 g_loss.backward()
@@ -266,6 +319,9 @@ def objective(trial):
                 d_loss += 0.5 * adversarial_loss(validity_gt,
                                                  torch.ones_like(validity_gt, device=DEVICE))
 
+                # save loss
+                d_losses.append(d_loss.item())
+
                 # backward pass
                 d_loss.backward()
 
@@ -275,17 +331,27 @@ def objective(trial):
                 # Print statistics
                 current_g_loss += g_loss.item()
                 current_d_loss += d_loss.item()
-                if batch_i % 500 == 499:
-                    print(f'Loss after mini-batch {batch_i + 1}: g={current_g_loss / 500} d={current_d_loss / 500}')
-                    current_g_loss = 0.0
-                    current_d_loss = 0.0
+                # if batch_i % 500 == 499:
+                #     print(f'Loss after mini-batch {batch_i + 1}: g={current_g_loss / 500} d={current_d_loss / 500}')
+                #     current_g_loss = 0.0
+                #     current_d_loss = 0.0
                 pbar.update()
 
             # Evaluation for this fold
             # Print about testing
             OE.eval()
             G.eval()
-            matches, total, correct_presses, total_presses, actual_total_presses = 0, 0, 0, 0, 0
+            D.eval()
+            validation_stats_0 = {
+                'correct_presses': 0,
+                'total_presses': 0,
+                'actual_total_presses': 0
+            }
+            validation_stats_1 = {
+                'correct_presses': 0,
+                'total_presses': 0,
+                'actual_total_presses': 0
+            }
             with torch.no_grad():
 
                 # Iterate over the test data and generate predictions
@@ -306,32 +372,58 @@ def objective(trial):
                     binary_prediction = (predicted_future_keys > 0).float()
                     binary_target = (real_future_keys > 0).float()
 
-                    total += torch.numel(binary_target)
-                    total_presses += torch.sum(binary_prediction).item()  # count positives
-                    correct_presses += torch.sum(torch.mul(binary_prediction,
-                                                           binary_target)).item()  # multiply so only correct presses remain
-                    actual_total_presses += torch.sum(binary_target).item()  # count real positives
-                    matches += torch.numel(binary_target) - torch.sum(
-                        torch.abs(binary_prediction - binary_target)).item()
+                    update_validation_stats(validation_stats_1, binary_prediction, binary_target, 1)
+                    update_validation_stats(validation_stats_0, binary_prediction, binary_target, 0)
 
                 # Print accuracy
-                accuracy = 100.0 * matches / total
-                precision = 100.0 * correct_presses / total_presses if total_presses > 0 else 0
-                recall = 100.0 * correct_presses / actual_total_presses if actual_total_presses > 0 else 0
-                print('--------------------------------')
-                results[fold][epoch][0] = accuracy
-                results[fold][epoch][1] = precision
-                results[fold][epoch][2] = recall
+                precision = 100.0 * validation_stats_1['correct_presses'] / validation_stats_1['total_presses'] if \
+                validation_stats_1['total_presses'] > 0 else 0
 
-    epoch_avg = torch.mean(results, dim=0)  # num_epochs x 3
-    prec = epoch_avg[-1][1], reca = epoch_avg[-1][2]
-    f1 = 2 * prec * reca / (prec + reca)
-    print(f"{obs_encoding_size=} {d_hidden_size=} {g_hidden_size=} {l2_loss_weight} {variety_loss_k=} {lr_g=} {lr_d=} {beta1=} {beta2=} | {f1=}")
+                recall_1 = 100.0 * validation_stats_1['correct_presses'] / validation_stats_1['actual_total_presses'] if \
+                validation_stats_1['actual_total_presses'] > 0 else 0
+
+                recall_0 = 100.0 * validation_stats_0['correct_presses'] / validation_stats_0['actual_total_presses'] if \
+                validation_stats_0['actual_total_presses'] > 0 else 0
+
+                accuracy = 50.0 * (recall_1 + recall_0)
+                f1 = 2 * precision * recall_1 / (precision + recall_1) if precision + recall_1 > 0 else 0
+
+                print(f"accuracy={accuracy}, precision={precision}, recall={recall_1}, f1={f1}")
+
+                print('--------------------------------')
+
+            save_model(trial_count, fold, epoch, {
+                'g_adv_losses': g_adversarial_losses,
+                'g_variety_losses': g_variety_losses,
+                'd_losses': d_losses
+            }, {
+                'accuracy': accuracy,
+                'precision': precision,
+                'recall': recall_1,
+                'f1': f1
+            }, hyperparams, OE, G, D)
+
+            if last_for_each_fold[fold][3] < f1:
+                last_for_each_fold[fold][0] = accuracy
+                last_for_each_fold[fold][1] = precision
+                last_for_each_fold[fold][2] = recall_1
+                last_for_each_fold[fold][3] = f1
+                continue
+            # f1 is lower - early stopping after 2 iterations worse
+            iters_no_improv += 1
+            if iters_no_improv >= 2:
+                print(f"Early stopping at epoch {epoch}")
+                break
+
+    epoch_avg = torch.mean(last_for_each_fold, dim=0)  # x 4
+    f1 = epoch_avg[3]
+    print(
+        f"obs_encoding_size={obs_encoding_size} d_hidden_size={d_hidden_size} g_hidden_size={g_hidden_size} l2_loss_weight={l2_loss_weight} variety_loss_k={variety_loss_k} lr_g={lr_g} lr_d={lr_d} | f1={f1}")
     return f1
 
 
 study = optuna.create_study(study_name="optimize_gan_variety_loss", direction='maximize',
-                            load_if_exists=True, storage=f'sqlite:///{FS_PATH}optuna.db')
-study.optimize(objective, n_trials=16, show_progress_bar=True)
+                            load_if_exists=True, storage=f'sqlite:///{MAIN_DATA_PATH}/optuna.db')
+study.optimize(objective, n_trials=10, show_progress_bar=True)
 
 print(study.best_params)
