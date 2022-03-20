@@ -1,22 +1,15 @@
-import os
-from os.path import sep
-
-import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from pando_utils import *
 from split_sequences_dataset import SplitSequencesDataset
 from itertools import chain
 from sklearn.model_selection import KFold
 
-MAIN_DATA_PATH = "/scratch/students/g.cabral"
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-print("USING DEVICE: " + DEVICE)
 # Observations parameters
 obs_encoding_size = 128
-nr_observations = 5
 
 # Predictor parameters
 g_hidden_size = 512
@@ -32,13 +25,12 @@ game_state_columns = ["robot_mode", "robot_x", "robot_y", "robot_theta"]
 player_output_columns = ["key_front", "key_back", "key_left", "key_right", "key_space"]
 game_state_dim = len(game_state_columns)
 player_output_dim = len(player_output_columns)
-batch_size = 32
+batch_size = 256
 
-dataset_path = MAIN_DATA_PATH + "/observations_5s"
-dataset = SplitSequencesDataset(dataset_path,
+dataset = SplitSequencesDataset(DATASET_DIR,
                                 x_columns=player_output_columns,
                                 y_columns=game_state_columns,
-                                smooth_labels=False)
+                                smooth_labels=False, cache=True)
 
 
 class Encoder(nn.Module):
@@ -90,8 +82,6 @@ class Predictor(nn.Module):
 
 
 MODEL_SAVE_FILENAME = "predictor_model"
-SAVEDIR = MAIN_DATA_PATH + sep + "saves" + sep
-SAVEFILE_PATH = SAVEDIR + MODEL_SAVE_FILENAME + ".pt"
 
 
 def save_model(fold, epoch, losses, validation, OE, P):
@@ -101,17 +91,7 @@ def save_model(fold, epoch, losses, validation, OE, P):
         'obs_encoder': OE.state_dict(),
         'predictor': P.state_dict(),
     }
-    torch.save(data, SAVEDIR + MODEL_SAVE_FILENAME + f"-f{fold}-e{epoch}.pt")
-
-
-def update_validation_stats(stats, binary_prediction, binary_target, bin_class=1):
-    if bin_class == 0:
-        binary_prediction = (binary_prediction == 0).float()
-        binary_target = (binary_target == 0).float()
-    stats['total_presses'] += torch.sum(binary_prediction).item()  # count positives
-    stats['correct_presses'] += torch.sum(torch.mul(binary_prediction,
-                                                    binary_target)).item()  # multiply so only correct presses remain
-    stats['actual_total_presses'] += torch.sum(binary_target).item()  # count real positives
+    torch.save(data, SAVE_DIR + MODEL_SAVE_FILENAME + f"-f{fold}-e{epoch}.pt")
 
 
 def extract_data(data):
@@ -129,10 +109,13 @@ if __name__ == '__main__':
 
     # Configuration options
     k_folds = 4
-    num_epochs = 10
+    num_epochs = 100
+
+    # loss
+    mseloss = nn.MSELoss().to(DEVICE)
 
     # For fold results
-    results = torch.zeros((k_folds, num_epochs, 3))
+    results = torch.zeros((k_folds, num_epochs, 4))
 
     # Set fixed random number seed
     torch.manual_seed(42)
@@ -167,9 +150,6 @@ if __name__ == '__main__':
 
         # optimizer
         p_optimizer = optim.Adam(chain(P.parameters(), OE.parameters()), lr=lr_g, betas=(beta1, beta2))
-
-        # loss
-        mseloss = nn.MSELoss().to(DEVICE)
 
         # Run the training loop for defined number of epochs
         for epoch in range(num_epochs):
@@ -260,18 +240,7 @@ if __name__ == '__main__':
                     update_validation_stats(validation_stats_0, binary_prediction, binary_target, 0)
 
                 # Print accuracy
-                precision = 100.0 * validation_stats_1['correct_presses'] / validation_stats_1['total_presses'] if \
-                    validation_stats_1['total_presses'] > 0 else 0
-
-                recall_1 = 100.0 * validation_stats_1['correct_presses'] / validation_stats_1['actual_total_presses'] if \
-                    validation_stats_1['actual_total_presses'] > 0 else 0
-
-                recall_0 = 100.0 * validation_stats_0['correct_presses'] / validation_stats_0['actual_total_presses'] if \
-                    validation_stats_0['actual_total_presses'] > 0 else 0
-
-                accuracy = 50.0 * (recall_1 + recall_0)
-                f1 = 2 * precision * recall_1 / (precision + recall_1) if precision + recall_1 > 0 else 0
-
+                accuracy, precision, recall_1, f1 = compute_stats(validation_stats_0, validation_stats_1)
                 print('Accuracy for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, accuracy))
                 print('Precision for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, precision))
                 print('Recall for fold %d, epoch %d: %.3f %%' % (fold + 1, epoch + 1, recall_1))
@@ -280,6 +249,7 @@ if __name__ == '__main__':
                 results[fold][epoch][0] = accuracy
                 results[fold][epoch][1] = precision
                 results[fold][epoch][2] = recall_1
+                results[fold][epoch][3] = f1
 
                 # Saving the model
                 save_model(fold, epoch, losses, {
@@ -292,16 +262,16 @@ if __name__ == '__main__':
     # Print fold results
     print(f'K-FOLD CROSS VALIDATION RESULTS FOR {k_folds} FOLDS')
     print('--------------------------------')
-    fold_avg = torch.mean(results, dim=1)  # k_folds x 3
+    fold_avg = torch.mean(results, dim=1)  # k_folds x 4
     for fold in range(k_folds):
-        print(f'Fold {fold + 1}: A={fold_avg[fold][0]}% P={fold_avg[fold][1]}% R={fold_avg[fold][2]}%')
+        print(f'Fold {fold + 1}: A={fold_avg[fold][0]}% P={fold_avg[fold][1]}% R={fold_avg[fold][2]}% F1={fold_avg[fold][3]}%')
     print(f'K-FOLD CROSS VALIDATION RESULTS FOR {num_epochs} EPOCHS')
     print('--------------------------------')
-    epoch_avg = torch.mean(results, dim=0)  # num_epochs x 3
+    epoch_avg = torch.mean(results, dim=0)  # num_epochs x 4
     for epoch in range(num_epochs):
-        print(f'Epoch {epoch + 1}: A={epoch_avg[epoch][0]}% P={epoch_avg[epoch][1]}% R={epoch_avg[epoch][2]}%')
+        print(f'Epoch {epoch + 1}: A={epoch_avg[epoch][0]}% P={epoch_avg[epoch][1]}% R={epoch_avg[epoch][2]}% F1={epoch_avg[epoch][3]}%')
     print(f'K-FOLD CROSS VALIDATION GLOBAL RESULTS')
     print('--------------------------------')
-    global_avg = torch.mean(results, dim=[0, 1])  # 3
-    print(f'A={global_avg[0]}% P={global_avg[1]}% R={global_avg[2]}%')
+    global_avg = torch.mean(results, dim=[0, 1])  # 4
+    print(f'A={global_avg[0]}% P={global_avg[1]}% R={global_avg[2]}% F1={global_avg[3]}%')
     pbar.close()

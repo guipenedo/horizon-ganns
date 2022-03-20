@@ -107,7 +107,7 @@ class Discriminator(nn.Module):
         return self.fc_layer(prediction_with_encoding)
 
 
-MODEL_SAVE_FILENAME = "predictor_gan_v_loss_optuna"
+MODEL_SAVE_FILENAME = "predictor_gan_v_loss_m_validation_optuna"
 
 trial_count = 0
 
@@ -132,6 +132,9 @@ adversarial_loss = nn.BCELoss().to(DEVICE)
 # Configuration options
 k_folds = 4
 num_epochs = 10
+
+# amount for validation
+samples_to_validate = 5
 
 # Define the K-fold Cross Validator
 kfold = KFold(n_splits=k_folds, shuffle=True)
@@ -356,18 +359,32 @@ def objective(trial):
                     # encode
                     game_state_encoding = OE(torch.cat((observed_game_state, observed_keys), dim=2))
 
-                    # sample latent vector
-                    z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
+                    # we use the best out of "samples_to_validate" results for this particular observation
+                    best = None
+                    best_binary_prediction, best_binary_target = None, None
 
-                    # predict
-                    predicted_future_keys = G(game_state_encoding, z)
+                    for sample_i in range(samples_to_validate):
+                        # sample latent vector
+                        z = torch.randn((game_state_encoding.shape[0], 1, g_latent_dim), device=DEVICE)
 
-                    # Set total and correct
-                    binary_prediction = (predicted_future_keys > 0).float()
-                    binary_target = (real_future_keys > 0).float()
+                        # predict
+                        predicted_future_keys = G(game_state_encoding, z)
 
-                    update_validation_stats(validation_stats_1, binary_prediction, binary_target, 1)
-                    update_validation_stats(validation_stats_0, binary_prediction, binary_target, 0)
+                        # Set total and correct
+                        binary_prediction = (predicted_future_keys > 0).float()
+                        binary_target = (real_future_keys > 0).float()
+
+                        prec = torch.sum(torch.mul(binary_prediction, binary_target)).item() / torch.sum(
+                            binary_prediction).item() if torch.sum(
+                            binary_prediction).item() > 0 else 0
+
+                        if best is None or prec > best:
+                            best = prec
+                            best_binary_prediction = binary_prediction
+                            best_binary_target = binary_target
+
+                    update_validation_stats(validation_stats_1, best_binary_prediction, best_binary_target, 1)
+                    update_validation_stats(validation_stats_0, best_binary_prediction, best_binary_target, 0)
 
                 # Print accuracy
                 accuracy, precision, recall_1, f1 = compute_stats(validation_stats_0, validation_stats_1)
@@ -404,7 +421,7 @@ def objective(trial):
     return f1
 
 
-study = optuna.create_study(study_name="optimize_gan_variety_loss", direction='maximize',
+study = optuna.create_study(study_name="optimize_gan_variety_loss_m_validation", direction='maximize',
                             load_if_exists=True, storage=f'sqlite:///{OPTUNA_PATH}')
 study.optimize(objective, n_trials=200, show_progress_bar=True)
 
