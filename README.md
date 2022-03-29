@@ -21,6 +21,7 @@ conda install pandas scikit-learn -c conda-forge
 - **old_models** older files, not organized
 - **preprocessing** scripts to process/filter/normalize the original dataset
 - **utils** utility scripts
+- **reports** RP reports
 
 
 ## Dataset
