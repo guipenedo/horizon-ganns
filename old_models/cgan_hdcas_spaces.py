@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch.optim as optim
-from models_util import *
-import torch.nn.functional as F
+from old_models.models_util import *
 
 # Discriminator hyperparameters
 lr_d = 0.001

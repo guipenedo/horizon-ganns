@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch import autograd
 
-from models_util import *
+from old_models.models_util import *
 
 # Discriminator hyperparameters
 lr_d = 0.002

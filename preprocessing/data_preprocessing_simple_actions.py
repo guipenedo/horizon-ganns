@@ -1,4 +1,4 @@
-from normalize_utils import normalize_csv_row
+from utils.normalize_utils import normalize_csv_row
 import pandas as pd
 import os
 
